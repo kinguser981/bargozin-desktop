@@ -2,8 +2,6 @@ import Spinner from './spinner';
 
 interface LoadingProps {
   text?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  color?: 'primary' | 'secondary' | 'white' | 'gray';
   fullScreen?: boolean;
   className?: string;
   onCancel?: () => void;
@@ -12,9 +10,7 @@ interface LoadingProps {
 }
 
 export default function Loading({ 
-  text = 'در حال بررسی...', 
-  size = 'lg', 
-  color = 'primary',
+  text = 'در حال بررسی...',
   fullScreen = true,
   className = '',
   onCancel,

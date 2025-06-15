@@ -9,7 +9,7 @@ export default function Layout(props: { children: React.ReactNode }) {
           <h1 className="text-2xl font-bold">برگُزین</h1>
           <p className="text-sm">انتخاب بهترین گزینه</p>
         </div>
-        <Bargozin className="scale-50" />
+        <Bargozin />
       </header>
       <section className="px-4 pb-8 text-white flex flex-1 min-h-0 w-full">
         <main className="flex-1 overflow-auto mr-4">

@@ -1,4 +1,4 @@
-export default function Bargozin(props: { className: string }) {
+export default function Bargozin() {
   return (
     <svg
       width="58"

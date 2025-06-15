@@ -1,23 +1,3 @@
-interface SpinnerProps {
-  size?: "sm" | "md" | "lg" | "xl";
-  color?: "primary" | "secondary" | "white" | "gray";
-  className?: string;
-}
-
-const sizeClasses = {
-  sm: "w-4 h-4 border-2",
-  md: "w-6 h-6 border-2",
-  lg: "w-8 h-8 border-3",
-  xl: "w-12 h-12 border-4",
-};
-
-const colorClasses = {
-  primary: "border-blue-200 border-t-blue-600",
-  secondary: "border-purple-200 border-t-purple-600",
-  white: "border-gray-300 border-t-white",
-  gray: "border-gray-200 border-t-gray-600",
-};
-
 export default function Spinner(props: { className?: string }) {
   return (
     <div

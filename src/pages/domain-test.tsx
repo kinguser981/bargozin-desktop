@@ -26,7 +26,6 @@ export default function DomainTest() {
   const [unusableResults, setUnusableResults] = useState<DnsTestResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [currentSession, setCurrentSession] = useState<number>(0);
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
@@ -106,7 +105,6 @@ export default function DomainTest() {
         }
       );
 
-      setCurrentSession(sessionId);
       currentSessionRef.current = sessionId;
       console.log("Initialized with session:", sessionId);
     };
@@ -138,7 +136,6 @@ export default function DomainTest() {
 
       // Get the new session ID that was created for this test
       const newSessionId = await invoke<number>("get_current_session");
-      setCurrentSession(newSessionId);
       currentSessionRef.current = newSessionId;
       console.log("Started DNS test with session:", newSessionId);
     } catch (error) {
