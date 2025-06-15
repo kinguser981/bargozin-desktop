@@ -18,9 +18,11 @@ const colorClasses = {
   gray: "border-gray-200 border-t-gray-600",
 };
 
-export default function Spinner() {
+export default function Spinner(props: { className?: string }) {
   return (
-    <div className="flex items-center justify-center relative w-24 h-24">
+    <div
+      className={`flex items-center justify-center relative w-24 h-24 ${props.className}`}
+    >
       {/* Outer half circle - bigger, spinning clockwise */}
       <svg
         width="96"
@@ -51,7 +53,7 @@ export default function Spinner() {
           </linearGradient>
         </defs>
       </svg>
-      
+
       {/* Inner half circle - smaller, spinning counter-clockwise */}
       <svg
         width="64"

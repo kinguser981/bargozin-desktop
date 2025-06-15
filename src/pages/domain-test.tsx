@@ -6,6 +6,7 @@ import TestResultItem from "../components/test-result-item";
 import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import Spinner from "../components/spinner";
 
 interface DnsTestResult {
   dns_server: string;
@@ -18,7 +19,7 @@ export default function DomainTest() {
   const { showInfo, showError } = useAlertHelpers();
   const leftColumnRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
-  
+
   const [domain, setDomain] = useState("");
   const [usableResults, setUsableResults] = useState<DnsTestResult[]>([]);
   const [unusableResults, setUnusableResults] = useState<DnsTestResult[]>([]);
@@ -38,13 +39,13 @@ export default function DomainTest() {
     // Listen for individual DNS test results
     const unlisten = listen<DnsTestResult>("dns-test-result", (event) => {
       const result = event.payload;
-      
+
       if (result.status) {
-        setUsableResults(prev => [...prev, result]);
+        setUsableResults((prev) => [...prev, result]);
         // Auto-scroll right column when new usable result arrives
         setTimeout(() => scrollToBottom(rightColumnRef), 100);
       } else {
-        setUnusableResults(prev => [...prev, result]);
+        setUnusableResults((prev) => [...prev, result]);
         // Auto-scroll left column when new unusable result arrives
         setTimeout(() => scrollToBottom(leftColumnRef), 100);
       }
@@ -58,8 +59,8 @@ export default function DomainTest() {
 
     // Cleanup listeners on component unmount
     return () => {
-      unlisten.then(fn => fn());
-      unlistenComplete.then(fn => fn());
+      unlisten.then((fn) => fn());
+      unlistenComplete.then((fn) => fn());
     };
   }, []);
 
@@ -106,46 +107,50 @@ export default function DomainTest() {
           دامنه مورد نظر
         </p>
         <div className="mb-4 relative">
+          {/* Progress Bar Background */}
+          {(totalResults > 0 || isLoading) && (
+            <div className="absolute inset-0 rounded-md overflow-hidden">
+              <div
+                className="h-full bg-green-500/25 pulse-effect transition-all duration-300"
+                style={{
+                  width: `${(totalResults / totalExpected) * 100}%`,
+                }}
+              ></div>
+            </div>
+          )}
+
           <input
             type="text"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleDnsTest()}
-            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3]"
+            className="bg-[#30363d6a] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
             placeholder="مثلا spotify.com"
             disabled={isLoading}
           />
-          <button 
+
+          {/* Progress Text */}
+          {(totalResults > 0 || isLoading) && (
+            <div className="absolute left-[200px] top-1/2 transform -translate-y-1/2 text-xs text-gray-400 z-20">
+              {totalResults} / {totalExpected}
+            </div>
+          )}
+
+          <button
             onClick={handleDnsTest}
             disabled={isLoading}
-            className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#96989A] text-[#848484] flex items-center gap-2 cursor-pointer hover:bg-[#38727C] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#96989A] text-[#848484] flex items-center gap-2 cursor-pointer hover:bg-[#38727C] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed z-20"
           >
             <Search />
             {isLoading ? "در حال بررسی..." : "بررسی DNS ها"}
           </button>
         </div>
       </div>
-      
+
       {/* Results Section - Takes remaining space */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex justify-between items-center mb-4 flex-shrink-0">
-          <p className="text-center flex-1">نتایج تست</p>
-          {isLoading && (
-            <div className="text-sm text-gray-400">
-              {totalResults}/{totalExpected} تست شده
-            </div>
-          )}
-        </div>
+        <p className="text-center">نتایج تست</p>
 
-        {isLoading && totalResults === 0 && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B9DC3]"></div>
-              <p className="mt-2 text-gray-400">در حال شروع تست DNS سرورها...</p>
-            </div>
-          </div>
-        )}
-        
         {(totalResults > 0 || isCompleted) && (
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
             {/* Left Column - Unusable DNS servers */}
@@ -160,9 +165,9 @@ export default function DomainTest() {
                 className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
               >
                 {unusableResults.map((result, index) => (
-                  <TestResultItem 
+                  <TestResultItem
                     key={`unusable-${index}`}
-                    dns={result.dns_server} 
+                    dns={result.dns_server}
                     status={result.status}
                     responseTime={result.response_time}
                     errorMessage={result.error_message}
@@ -206,9 +211,9 @@ export default function DomainTest() {
                 className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
               >
                 {usableResults.map((result, index) => (
-                  <TestResultItem 
+                  <TestResultItem
                     key={`usable-${index}`}
-                    dns={result.dns_server} 
+                    dns={result.dns_server}
                     status={result.status}
                     responseTime={result.response_time}
                     errorMessage={result.error_message}
@@ -246,11 +251,13 @@ export default function DomainTest() {
           <div className="mt-4 text-center flex-shrink-0">
             <div className="inline-flex items-center gap-4 bg-[#30363D] rounded-lg px-6 py-3">
               <div className="text-green-400">
-                <span className="font-medium">{usableResults.length}</span> قابل استفاده
+                <span className="font-medium">{usableResults.length}</span> قابل
+                استفاده
               </div>
               <div className="text-gray-400">|</div>
               <div className="text-red-400">
-                <span className="font-medium">{unusableResults.length}</span> مسدود شده
+                <span className="font-medium">{unusableResults.length}</span>{" "}
+                مسدود شده
               </div>
               <div className="text-gray-400">|</div>
               <div className="text-gray-300">
