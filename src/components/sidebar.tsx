@@ -6,7 +6,7 @@ import Web from "./svg/web";
 
 export default function Sidebar() {
   return (
-    <div className="bg-[#161B22] w-[285px] text-right p-4 rounded-3xl h-[615px] flex flex-col justify-between">
+    <div className="bg-[#161B22] w-[245px] text-right px-2 py-4 rounded-3xl h-full flex flex-col justify-between min-h-0">
       <div className="px-4">
         <h3 className="text-white text-lg font-light text-right mt-2">
           سرویس ها

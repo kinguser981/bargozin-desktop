@@ -15,7 +15,6 @@ interface DnsTestResult {
 }
 
 export default function DomainTest() {
-  // return <Loading onCancel={() => {}} showCancel={true} cancelText="انصراف" />
   const { showInfo, showError } = useAlertHelpers();
   const leftColumnRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
@@ -90,8 +89,9 @@ export default function DomainTest() {
   const totalExpected = 19; // Total number of DNS servers
 
   return (
-    <div className="text-right px-10">
-      <div>
+    <div className="text-right h-full flex flex-col">
+      {/* Input Section - Fixed height */}
+      <div className="flex-shrink-0">
         <p className="mb-4 flex justify-end items-center gap-2">
           <button
             className="cursor-pointer"
@@ -126,8 +126,9 @@ export default function DomainTest() {
         </div>
       </div>
       
-      <div>
-        <div className="flex justify-between items-center mb-4">
+      {/* Results Section - Takes remaining space */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <p className="text-center flex-1">نتایج تست</p>
           {isLoading && (
             <div className="text-sm text-gray-400">
@@ -137,24 +138,26 @@ export default function DomainTest() {
         </div>
 
         {isLoading && totalResults === 0 && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B9DC3]"></div>
-            <p className="mt-2 text-gray-400">در حال شروع تست DNS سرورها...</p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B9DC3]"></div>
+              <p className="mt-2 text-gray-400">در حال شروع تست DNS سرورها...</p>
+            </div>
           </div>
         )}
         
         {(totalResults > 0 || isCompleted) && (
-          <div className="grid grid-cols-2 gap-4 my-4">
+          <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
             {/* Left Column - Unusable DNS servers */}
-            <div className="relative">
-              <div className="mb-2 text-center">
+            <div className="relative flex flex-col overflow-auto">
+              <div className="mb-2 text-center flex-shrink-0">
                 <span className="text-red-400 text-sm font-medium">
                   مسدود شده ({unusableResults.length})
                 </span>
               </div>
               <div
                 ref={leftColumnRef}
-                className="max-h-[450px] overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+                className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
               >
                 {unusableResults.map((result, index) => (
                   <TestResultItem 
@@ -166,7 +169,7 @@ export default function DomainTest() {
                   />
                 ))}
                 {unusableResults.length === 0 && isCompleted && (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className="flex items-center justify-center h-full text-gray-400">
                     <p>هیچ سرور DNS مسدودی یافت نشد!</p>
                   </div>
                 )}
@@ -192,15 +195,15 @@ export default function DomainTest() {
             </div>
 
             {/* Right Column - Usable DNS servers */}
-            <div className="relative">
-              <div className="mb-2 text-center">
+            <div className="relative flex flex-col overflow-auto">
+              <div className="mb-2 text-center flex-shrink-0">
                 <span className="text-green-400 text-sm font-medium">
                   قابل استفاده ({usableResults.length})
                 </span>
               </div>
               <div
                 ref={rightColumnRef}
-                className="max-h-[450px] overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+                className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
               >
                 {usableResults.map((result, index) => (
                   <TestResultItem 
@@ -212,7 +215,7 @@ export default function DomainTest() {
                   />
                 ))}
                 {usableResults.length === 0 && isCompleted && (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className="flex items-center justify-center h-full text-gray-400">
                     <p>متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
                   </div>
                 )}
@@ -240,7 +243,7 @@ export default function DomainTest() {
         )}
 
         {isCompleted && (
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center flex-shrink-0">
             <div className="inline-flex items-center gap-4 bg-[#30363D] rounded-lg px-6 py-3">
               <div className="text-green-400">
                 <span className="font-medium">{usableResults.length}</span> قابل استفاده

@@ -6,17 +6,19 @@ export default function SidebarItem(props: {
   href: string;
 }) {
   const location = useLocation();
+  const isActive = location.pathname === props.href;
+  
   return (
     <Link
       to={props.href}
-      className={`flex items-center justify-end gap-2 text-right mb-[15px] text-lg hover:bg-gradient-to-bl hover:from-[#1C4C91] hover:to-[#2F81F7] transition duration-300 rounded-lg px-3 py-2 ${
-        location.pathname === props.href
+      className={`flex items-center justify-end gap-2 text-right mb-[15px] text-sm rounded-lg px-2 py-1 ${
+        isActive
           ? "bg-gradient-to-br from-[#1C4C91] to-[#2F81F7]"
-          : ""
+          : "hover:bg-gradient-to-bl hover:from-[#1C4C91] hover:to-[#2F81F7]"
       }`}
     >
-      <div>{props.title}</div>
-      <div>{props.icon}</div>
+      <span>{props.title}</span>
+      <span>{props.icon}</span>
     </Link>
   );
 }
