@@ -11,11 +11,35 @@ export default function TestResultItem(props: {
     return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`;
   };
 
+  const shortenErrorMessage = (message?: string) => {
+    if (!message) return "";
+    
+    // Common DNS error patterns and their shortened versions
+    const errorMappings = [
+      { pattern: /DNS lookup failed: request timed out/i, short: "درخواست منقضی شد" },
+      { pattern: /DNS lookup failed: connection refused/i, short: "اتصال رد شد" },
+      { pattern: /DNS lookup failed: no response/i, short: "پاسخی دریافت نشد" },
+      { pattern: /DNS lookup failed: network unreachable/i, short: "شبکه در دسترس نیست" },
+      { pattern: /DNS lookup failed: server failure/i, short: "خطای سرور" },
+      { pattern: /Invalid DNS server IP/i, short: "IP سرور نامعتبر" },
+      { pattern: /No IP addresses found/i, short: "آدرس IP یافت نشد" },
+    ];
+
+    for (const mapping of errorMappings) {
+      if (mapping.pattern.test(message)) {
+        return mapping.short;
+      }
+    }
+
+    // If no pattern matches, return truncated version
+    return message.length > 35 ? message.substring(0, 32) + "..." : message;
+  };
+
   return (
     <div
       className={`${
         props.status ? "bg-[#142A20]" : "bg-[#301B1F]"
-      } h-[70px] rounded-lg mb-2 flex justify-between items-center px-5`}
+      } h-[70px] rounded-lg mb-2 flex justify-between items-center px-1`}
     >
       <div className="flex flex-col">
         <p className="flex items-center mb-1">
@@ -33,14 +57,24 @@ export default function TestResultItem(props: {
           </p>
         )}
       </div>
-      <div className="flex flex-col items-end">
-        <p className={`${props.status ? "text-[#3FB950]" : "text-[#F85149]"} flex items-center gap-2 mb-1`}>
+      <div className="flex flex-col items-end flex-shrink-0 min-w-0 max-w-[240px]">
+        <p className={`${props.status ? "text-[#3FB950]" : "text-[#F85149]"} flex items-center gap-2 mb-1 whitespace-nowrap`}>
           {props.status ? "قابل استفاده" : "مسدود شده"}
           <StatusCircle status={props.status} />
         </p>
         {!props.status && props.errorMessage && (
-          <p className="text-xs text-gray-400 text-right max-w-[150px] truncate" title={props.errorMessage}>
-            {props.errorMessage}
+          <p 
+            className="text-xs text-gray-400 text-right break-words overflow-hidden leading-tight" 
+            title={props.errorMessage}
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              wordBreak: 'break-word',
+              hyphens: 'auto'
+            }}
+          >
+            {shortenErrorMessage(props.errorMessage)}
           </p>
         )}
       </div>
