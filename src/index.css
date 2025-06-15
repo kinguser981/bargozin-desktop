@@ -118,3 +118,20 @@ html, body {
   height: 16px;
   animation: skeleton-animation 1.5s infinite;
 }
+
+.dir-fa {
+  direction: rtl;
+}
+
+.spin-clockwise {
+  animation: spin 2s linear infinite;
+}
+
+.spin-counter-clockwise {
+  animation: spin-reverse 1.5s linear infinite;
+}
+
+@keyframes spin-reverse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}

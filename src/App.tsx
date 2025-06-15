@@ -5,19 +5,24 @@ import DomainTest from "./pages/domain-test";
 import Layout from "./components/layout";
 import DownloadTest from "./pages/download";
 import DockerTest from "./pages/docker";
+import { AlertProvider } from "./components/alert";
+import AlertDemo from "./components/AlertDemo";
 
 function App() {
   return (
-    <div>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<DomainTest />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/download" element={<DownloadTest />} />
-          <Route path="/docker" element={<DockerTest />} />
-        </Routes>
-      </Layout>
-    </div>
+    <AlertProvider>
+      <div>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<DomainTest />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/download" element={<DownloadTest />} />
+            <Route path="/docker" element={<DockerTest />} />
+            <Route path="/alert-demo" element={<AlertDemo />} />
+          </Routes>
+        </Layout>
+      </div>
+    </AlertProvider>
   );
 }
 
