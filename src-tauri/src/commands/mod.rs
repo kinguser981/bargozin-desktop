@@ -1,6 +1,16 @@
 use tauri::{Emitter, AppHandle};
 use crate::dns::{DNS_SERVERS, test_single_dns_server};
 use crate::utils::validate_domain;
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use tokio::task::JoinHandle;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+// Global storage for active DNS test tasks
+lazy_static::lazy_static! {
+    static ref ACTIVE_TASKS: Arc<Mutex<HashMap<String, Vec<JoinHandle<()>>>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref CURRENT_SESSION: AtomicU64 = AtomicU64::new(1);
+}
 
 #[tauri::command]
 pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(), String> {
@@ -10,41 +20,78 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
         return Err("Please enter a valid domain name".to_string());
     }
 
+    // Get new session ID and increment counter
+    let session_id = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
+
+    // Cancel any existing tests
+    {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        if let Some(handles) = active_tasks.remove(domain) {
+            for handle in handles {
+                handle.abort();
+            }
+        }
+    }
+
     let mut handles = Vec::new();
 
-    
     for &dns_server in DNS_SERVERS {
         let domain_clone = domain.to_string();
         let dns_server_string = dns_server.to_string();
         let app_handle_clone = app_handle.clone();
         
         let handle = tokio::spawn(async move {
-            let result = test_single_dns_server(domain_clone, dns_server_string).await;
+            let result = test_single_dns_server(domain_clone, dns_server_string, session_id).await;
             
             if let Err(e) = app_handle_clone.emit("dns-test-result", &result) {
                 eprintln!("Failed to emit DNS test result: {}", e);
             }
-            
-            result
         });
         
         handles.push(handle);
     }
 
-    
-    // let mut results = Vec::new();
-    // for handle in handles {
-    //     match handle.await {
-    //         Ok(result) => results.push(result),
-    //         Err(e) => eprintln!("Task join error: {}", e),
-    //     }
-    // }
+    // Store handles for potential cancellation
+    {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        active_tasks.insert(domain.to_string(), handles);
+    }
 
-    
+    // Wait for all tasks to complete by removing them from storage
+    let stored_handles = {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        active_tasks.remove(domain).unwrap_or_default()
+    };
+
+    for handle in stored_handles {
+        let _ = handle.await;
+    }
+
     if let Err(e) = app_handle.emit("dns-test-complete", ()) {
         eprintln!("Failed to emit completion event: {}", e);
     }
+    Ok(())
+}
 
-    // println!("DNS test completed for domain '{}'. Total results: {}", domain, results.len());
+#[tauri::command]
+pub async fn get_current_session() -> Result<u64, String> {
+    Ok(CURRENT_SESSION.load(Ordering::SeqCst))
+}
+
+#[tauri::command]
+pub async fn cancel_dns_tests() -> Result<(), String> {
+    // Increment session counter to invalidate any pending results
+    let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
+    println!("Cancelling DNS tests, new session: {}", new_session);
+    
+    let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+    
+    for (domain, handles) in active_tasks.drain() {
+        println!("Cancelling DNS tests for domain: {}", domain);
+        for handle in handles {
+            handle.abort();
+        }
+    }
+    
     Ok(())
 } 

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub const DNS_SERVERS: &[&str] = &[
     "178.22.122.100", 
     "185.51.200.2",   
-    "192.104.158.78", 
+    "192.104.158.78",
     "194.104.158.48", 
     "172.29.0.100",   
     "172.29.2.100",   
@@ -21,10 +21,17 @@ pub const DNS_SERVERS: &[&str] = &[
     "37.27.41.228",   
     "87.107.52.11",   
     "87.107.52.13",   
-    "5.202.100.100",  
+    "5.202.100.100",
     "5.202.100.101",  
     "94.103.125.157", 
     "94.103.125.158", 
+    "8.8.8.8",
+    "8.8.4.4",
+    "1.1.1.1",
+    "1.0.0.1",
+    "9.9.9.9",
+    "149.112.112.112",
+    "149.112.112.112",
 ];
 
 pub const DNS_TIMEOUT_SECONDS: u64 = 5;
@@ -37,10 +44,11 @@ pub struct DnsTestResult {
     pub status: bool,
     pub response_time: Option<u64>, 
     pub error_message: Option<String>,
+    pub session_id: u64,
 }
 
 
-pub async fn test_single_dns_server(domain: String, dns_server: String) -> DnsTestResult {
+pub async fn test_single_dns_server(domain: String, dns_server: String, session_id: u64) -> DnsTestResult {
     let start_time = std::time::Instant::now();
     
     
@@ -52,6 +60,7 @@ pub async fn test_single_dns_server(domain: String, dns_server: String) -> DnsTe
                 status: false,
                 response_time: None,
                 error_message: Some(format!("Invalid DNS server IP: {}", e)),
+                session_id,
             };
         }
     };
@@ -78,6 +87,7 @@ pub async fn test_single_dns_server(domain: String, dns_server: String) -> DnsTe
                 } else { 
                     Some("No IP addresses found".to_string()) 
                 },
+                session_id,
             }
         }
         Err(e) => {
@@ -87,6 +97,7 @@ pub async fn test_single_dns_server(domain: String, dns_server: String) -> DnsTe
                 status: false,
                 response_time: Some(response_time),
                 error_message: Some(format!("DNS lookup failed: {}", e)),
+                session_id,
             }
         }
     }

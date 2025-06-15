@@ -128,6 +128,10 @@ body {
   direction: rtl;
 }
 
+.dir-en {
+  direction: ltr;
+}
+
 .spin-clockwise {
   animation: spin 2s linear infinite;
 }

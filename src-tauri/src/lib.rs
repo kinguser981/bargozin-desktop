@@ -10,7 +10,7 @@ pub use utils::*;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![test_dns_servers])
+        .invoke_handler(tauri::generate_handler![test_dns_servers, cancel_dns_tests, get_current_session])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

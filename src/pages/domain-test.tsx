@@ -6,25 +6,27 @@ import TestResultItem from "../components/test-result-item";
 import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import Spinner from "../components/spinner";
 
 interface DnsTestResult {
   dns_server: string;
   status: boolean;
   response_time?: number;
   error_message?: string;
+  session_id: number;
 }
 
 export default function DomainTest() {
   const { showInfo, showError } = useAlertHelpers();
   const leftColumnRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
+  const currentSessionRef = useRef<number>(0);
 
   const [domain, setDomain] = useState("");
   const [usableResults, setUsableResults] = useState<DnsTestResult[]>([]);
   const [unusableResults, setUnusableResults] = useState<DnsTestResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [currentSession, setCurrentSession] = useState<number>(0);
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
@@ -39,6 +41,14 @@ export default function DomainTest() {
     // Listen for individual DNS test results
     const unlisten = listen<DnsTestResult>("dns-test-result", (event) => {
       const result = event.payload;
+
+      // Ignore results from old sessions using ref for current value
+      if (result.session_id !== currentSessionRef.current) {
+        console.log(
+          `Ignoring result from old session ${result.session_id}, current session: ${currentSessionRef.current}`
+        );
+        return;
+      }
 
       if (result.status) {
         setUsableResults((prev) => [...prev, result]);
@@ -64,9 +74,54 @@ export default function DomainTest() {
     };
   }, []);
 
+  // Cleanup effect - Cancel ongoing tests when component unmounts
+  useEffect(() => {
+    return () => {
+      // Cancel any ongoing DNS tests when user navigates away
+      invoke("cancel_dns_tests").catch((error) => {
+        console.log("Failed to cancel DNS tests:", error);
+      });
+    };
+  }, []);
+
+  // Reset state when component mounts to ensure clean start
+  useEffect(() => {
+    const initializeSession = async () => {
+      // Clear any existing state from previous sessions
+      setIsLoading(false);
+      setIsCompleted(false);
+      setUsableResults([]);
+      setUnusableResults([]);
+
+      // Cancel any leftover tests from previous sessions
+      await invoke("cancel_dns_tests").catch((error) => {
+        console.log("Failed to cancel leftover DNS tests:", error);
+      });
+
+      // Get current session ID
+      const sessionId = await invoke<number>("get_current_session").catch(
+        (error) => {
+          console.log("Failed to get current session:", error);
+          return 0;
+        }
+      );
+
+      setCurrentSession(sessionId);
+      currentSessionRef.current = sessionId;
+      console.log("Initialized with session:", sessionId);
+    };
+
+    initializeSession();
+  }, []);
+
   const handleDnsTest = async () => {
     if (!domain.trim()) {
       showError("لطفاً یک دامنه وارد کنید");
+      return;
+    }
+
+    // Prevent multiple clicks
+    if (isLoading) {
       return;
     }
 
@@ -76,9 +131,16 @@ export default function DomainTest() {
     setUnusableResults([]);
 
     try {
+      // Start DNS tests (this will generate a new session ID in backend)
       await invoke("test_dns_servers", {
         domain: domain.trim(),
       });
+
+      // Get the new session ID that was created for this test
+      const newSessionId = await invoke<number>("get_current_session");
+      setCurrentSession(newSessionId);
+      currentSessionRef.current = newSessionId;
+      console.log("Started DNS test with session:", newSessionId);
     } catch (error) {
       console.error("DNS test error:", error);
       showError("خطا در انجام تست DNS: " + error);
@@ -87,7 +149,7 @@ export default function DomainTest() {
   };
 
   const totalResults = usableResults.length + unusableResults.length;
-  const totalExpected = 19; // Total number of DNS servers
+  const totalExpected = 26; // Total number of DNS servers
 
   return (
     <div className="text-right h-full flex flex-col">
@@ -111,7 +173,11 @@ export default function DomainTest() {
           {(totalResults > 0 || isLoading) && (
             <div className="absolute inset-0 rounded-md overflow-hidden">
               <div
-                className="h-full bg-green-500/25 pulse-effect transition-all duration-300"
+                className={`h-full bg-green-500/25 transition-all duration-300 ${
+                  totalResults > 0 && totalResults < totalExpected
+                    ? "pulse-effect"
+                    : ""
+                }`}
                 style={{
                   width: `${(totalResults / totalExpected) * 100}%`,
                 }}
@@ -138,11 +204,15 @@ export default function DomainTest() {
 
           <button
             onClick={handleDnsTest}
-            disabled={isLoading}
+            disabled={
+              isLoading || (totalResults > 0 && totalResults < totalExpected)
+            }
             className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#96989A] text-[#848484] flex items-center gap-2 cursor-pointer hover:bg-[#38727C] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed z-20"
           >
             <Search />
-            {isLoading ? "در حال بررسی..." : "بررسی DNS ها"}
+            {isLoading || (totalResults > 0 && totalResults < totalExpected)
+              ? "در حال بررسی..."
+              : "بررسی DNS ها"}
           </button>
         </div>
       </div>
@@ -152,53 +222,7 @@ export default function DomainTest() {
         <p className="text-center">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
-          <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-            {/* Left Column - Unusable DNS servers */}
-            <div className="relative flex flex-col overflow-auto">
-              <div className="mb-2 text-center flex-shrink-0">
-                <span className="text-red-400 text-sm font-medium">
-                  مسدود شده ({unusableResults.length})
-                </span>
-              </div>
-              <div
-                ref={leftColumnRef}
-                className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
-              >
-                {unusableResults.map((result, index) => (
-                  <TestResultItem
-                    key={`unusable-${index}`}
-                    dns={result.dns_server}
-                    status={result.status}
-                    responseTime={result.response_time}
-                    errorMessage={result.error_message}
-                  />
-                ))}
-                {unusableResults.length === 0 && isCompleted && (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <p>هیچ سرور DNS مسدودی یافت نشد!</p>
-                  </div>
-                )}
-              </div>
-
-              {unusableResults.length > 5 && (
-                <>
-                  {/* Black Gradient Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0D1117] to-transparent pointer-events-none"></div>
-
-                  {/* More Items Button */}
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                    <button
-                      onClick={() => scrollToBottom(leftColumnRef)}
-                      className="text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-lg dir-fa flex items-center gap-2"
-                    >
-                      <DoubleChevronDown />
-                      موارد بیشتر
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
+          <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 dir-fa">
             {/* Right Column - Usable DNS servers */}
             <div className="relative flex flex-col overflow-auto">
               <div className="mb-2 text-center flex-shrink-0">
@@ -244,25 +268,51 @@ export default function DomainTest() {
                 </>
               )}
             </div>
-          </div>
-        )}
 
-        {isCompleted && (
-          <div className="mt-4 text-center flex-shrink-0">
-            <div className="inline-flex items-center gap-4 bg-[#30363D] rounded-lg px-6 py-3">
-              <div className="text-green-400">
-                <span className="font-medium">{usableResults.length}</span> قابل
-                استفاده
+            {/* Left Column - Unusable DNS servers */}
+            <div className="relative flex flex-col overflow-auto">
+              <div className="mb-2 text-center flex-shrink-0">
+                <span className="text-red-400 text-sm font-medium">
+                  مسدود شده ({unusableResults.length})
+                </span>
               </div>
-              <div className="text-gray-400">|</div>
-              <div className="text-red-400">
-                <span className="font-medium">{unusableResults.length}</span>{" "}
-                مسدود شده
+              <div
+                ref={leftColumnRef}
+                className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
+              >
+                {unusableResults.map((result, index) => (
+                  <TestResultItem
+                    key={`unusable-${index}`}
+                    dns={result.dns_server}
+                    status={result.status}
+                    responseTime={result.response_time}
+                    errorMessage={result.error_message}
+                  />
+                ))}
+                {unusableResults.length === 0 && isCompleted && (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <p>هیچ سرور DNS مسدودی یافت نشد!</p>
+                  </div>
+                )}
               </div>
-              <div className="text-gray-400">|</div>
-              <div className="text-gray-300">
-                مجموع: <span className="font-medium">{totalResults}</span>
-              </div>
+
+              {unusableResults.length >= 5 && (
+                <>
+                  {/* Black Gradient Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0D1117] to-transparent pointer-events-none"></div>
+
+                  {/* More Items Button */}
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                    <button
+                      onClick={() => scrollToBottom(leftColumnRef)}
+                      className="text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-lg dir-fa flex items-center gap-2"
+                    >
+                      <DoubleChevronDown />
+                      موارد بیشتر
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
