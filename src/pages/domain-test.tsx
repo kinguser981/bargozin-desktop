@@ -6,7 +6,7 @@ import TestResultItem from "../components/test-result-item";
 import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { toast, useSonner } from "sonner";
+import { toast } from "sonner";
 
 interface DnsTestResult {
   dns_server: string;
@@ -18,7 +18,6 @@ interface DnsTestResult {
 
 export default function DomainTest() {
   const { showInfo, showError } = useAlertHelpers();
-  const { toasts } = useSonner();
   const leftColumnRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const currentSessionRef = useRef<number>(0);
