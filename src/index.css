@@ -201,3 +201,38 @@ body {
     transform: scale(1.05);
   }
 }
+
+/* Custom Scrollbar Styling to match dark theme */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-track {
+  background: #161b22;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 6px;
+  border: 1px solid #21262d;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444c56;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #5a6470;
+}
+
+::-webkit-scrollbar-corner {
+  background: #0d1117;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #30363d #161b22;
+}
