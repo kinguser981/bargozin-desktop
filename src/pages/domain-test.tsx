@@ -116,7 +116,12 @@ export default function DomainTest() {
 
   const handleDnsTest = async () => {
     if (!domain.trim()) {
-      showError("لطفاً یک دامنه وارد کنید");
+      toast.error("لطفاً یک دامنه وارد کنید",
+        {
+          position: "top-left",
+          className: "text-right dir-fa",
+        }
+      );
       return;
     }
 
@@ -224,7 +229,7 @@ export default function DomainTest() {
             disabled={
               isLoading || (totalResults > 0 && totalResults < totalExpected)
             }
-            className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#96989A] text-[#848484] flex items-center gap-2 cursor-pointer hover:bg-[#38727C] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed z-20"
+            className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#38727C] text-white flex items-center gap-2 cursor-pointer hover:bg-[#96989A] hover:text-[#848484] disabled:opacity-50 disabled:cursor-not-allowed z-20"
           >
             <Search />
             {isLoading || (totalResults > 0 && totalResults < totalExpected)

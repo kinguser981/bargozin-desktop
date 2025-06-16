@@ -13,7 +13,7 @@ export default function Search() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="group-hover:stroke-white transition-colors duration-200"
+        className="stroke-white transition-colors duration-200"
       />
       <path
         d="M15.8035 15.8035L21 21"
@@ -21,7 +21,7 @@ export default function Search() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="group-hover:stroke-white transition-colors duration-200"
+        className="stroke-white transition-colors duration-200"
       />
     </svg>
   );
