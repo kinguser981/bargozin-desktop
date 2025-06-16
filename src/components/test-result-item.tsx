@@ -1,4 +1,5 @@
 import Clipboard from "./svg/clipboard";
+import { useState } from "react";
 
 export default function TestResultItem(props: {
   dns: string;
@@ -6,6 +7,19 @@ export default function TestResultItem(props: {
   responseTime?: number;
   errorMessage?: string;
 }) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(props.dns);
+      setIsCopied(true);
+      // Reset after 2 seconds
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
   const formatResponseTime = (time?: number) => {
     if (time === undefined) return "";
     return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`;
@@ -54,12 +68,19 @@ export default function TestResultItem(props: {
       <div className="flex flex-col">
         <p className="flex items-center mb-1">
           <button
-            className="cursor-pointer ml-2"
-            onClick={() => navigator.clipboard.writeText(props.dns)}
+            className={`ml-2 p-1 rounded transition-all duration-200 hover:bg-white/10 ${
+              isCopied 
+                ? "text-green-400 scale-110" 
+                : "text-gray-400 hover:text-white cursor-pointer"
+            }`}
+            onClick={handleCopy}
+            disabled={isCopied}
           >
-            <Clipboard />
+            {isCopied ? <CheckIcon /> : <Clipboard />}
           </button>
-          {props.dns}
+          <span className={`transition-colors duration-200 ${isCopied ? "text-green-400" : ""}`}>
+            {props.dns}
+          </span>
         </p>
         {props.responseTime && (
           <p className="text-xs text-gray-400">
@@ -93,6 +114,23 @@ export default function TestResultItem(props: {
         )}
       </div>
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className="animate-bounce-once"
+    >
+      <path
+        fillRule="evenodd"
+        d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"
+      />
+    </svg>
   );
 }
 
