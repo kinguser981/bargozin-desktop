@@ -246,6 +246,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "bargozin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
+ "dirs 5.0.1",
+ "futures",
+ "lazy_static",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tokio",
+ "trust-dns-resolver",
+ "url",
+]
+
+[[package]]
 name = "base64"
 version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3858,27 +3879,6 @@ checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
 name = "tauri"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "colored",
- "dirs 5.0.1",
- "futures",
- "lazy_static",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "tauri 2.5.1",
- "tauri-build",
- "tauri-plugin-opener",
- "tokio",
- "trust-dns-resolver",
- "url",
-]
-
-[[package]]
-name = "tauri"
 version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7b0bc1aec81bda6bc455ea98fcaed26b3c98c1648c627ad6ff1c704e8bf8cbc"
@@ -4022,7 +4022,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "tauri 2.5.1",
+ "tauri",
  "tauri-plugin",
  "thiserror 2.0.12",
  "url",
