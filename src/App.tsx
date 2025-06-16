@@ -6,12 +6,14 @@ import Layout from "./components/layout";
 import DownloadTest from "./pages/download";
 import DockerTest from "./pages/docker";
 import { AlertProvider } from "./components/alert";
+import { Toaster } from "sonner";
 
 function App() {
   return (
     <AlertProvider>
       <div>
         <Layout>
+        <Toaster />
           <Routes>
             <Route path="/" element={<DomainTest />} />
             <Route path="/about" element={<About />} />

@@ -6,6 +6,7 @@ import TestResultItem from "../components/test-result-item";
 import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { toast, useSonner } from "sonner";
 
 interface DnsTestResult {
   dns_server: string;
@@ -17,6 +18,7 @@ interface DnsTestResult {
 
 export default function DomainTest() {
   const { showInfo, showError } = useAlertHelpers();
+  const { toasts } = useSonner();
   const leftColumnRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const currentSessionRef = useRef<number>(0);
@@ -115,6 +117,24 @@ export default function DomainTest() {
   const handleDnsTest = async () => {
     if (!domain.trim()) {
       showError("لطفاً یک دامنه وارد کنید");
+      return;
+    }
+
+    // Basic frontend validation for better UX
+    const trimmedDomain = domain.trim();
+    if (
+      trimmedDomain.includes("://") ||
+      trimmedDomain.includes("/") ||
+      trimmedDomain.includes("?") ||
+      trimmedDomain.includes("#")
+    ) {
+      toast.error(
+        "لطفاً فقط نام دامنه وارد کنید (مثلا: google.com)",
+        {
+          position: "top-left",
+          className: "dir-fa text-right",
+        }
+      );
       return;
     }
 
@@ -282,7 +302,7 @@ export default function DomainTest() {
                     key={`unusable-${index}`}
                     dns={result.dns_server}
                     status={result.status}
-                    responseTime={result.response_time}
+                    responseTime={Number(result.response_time?.toFixed(0))}
                     errorMessage={result.error_message}
                   />
                 ))}

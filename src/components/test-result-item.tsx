@@ -13,16 +13,26 @@ export default function TestResultItem(props: {
 
   const shortenErrorMessage = (message?: string) => {
     if (!message) return "";
-    
+
     // Common DNS error patterns and their shortened versions
     const errorMappings = [
-      { pattern: /DNS lookup failed: request timed out/i, short: "درخواست منقضی شد" },
-      { pattern: /DNS lookup failed: connection refused/i, short: "اتصال رد شد" },
+      {
+        pattern: /DNS lookup failed: request timed out/i,
+        short: "درخواست منقضی شد",
+      },
+      {
+        pattern: /DNS lookup failed: connection refused/i,
+        short: "اتصال رد شد",
+      },
       { pattern: /DNS lookup failed: no response/i, short: "پاسخی دریافت نشد" },
-      { pattern: /DNS lookup failed: network unreachable/i, short: "شبکه در دسترس نیست" },
+      {
+        pattern: /DNS lookup failed: network unreachable/i,
+        short: "شبکه در دسترس نیست",
+      },
       { pattern: /DNS lookup failed: server failure/i, short: "خطای سرور" },
       { pattern: /Invalid DNS server IP/i, short: "IP سرور نامعتبر" },
       { pattern: /No IP addresses found/i, short: "آدرس IP یافت نشد" },
+      { pattern: /DNS lookup failed: no record/i, short: "رکوردی یافت نشد" },
     ];
 
     for (const mapping of errorMappings) {
@@ -58,20 +68,24 @@ export default function TestResultItem(props: {
         )}
       </div>
       <div className="flex flex-col items-end flex-shrink-0 min-w-0 max-w-[240px]">
-        <p className={`${props.status ? "text-[#3FB950]" : "text-[#F85149]"} flex items-center gap-2 mb-1 whitespace-nowrap`}>
+        <p
+          className={`${
+            props.status ? "text-[#3FB950]" : "text-[#F85149]"
+          } flex items-center gap-2 mb-1 whitespace-nowrap`}
+        >
           {props.status ? "قابل استفاده" : "مسدود شده"}
           <StatusCircle status={props.status} />
         </p>
         {!props.status && props.errorMessage && (
-          <p 
-            className="text-xs text-gray-400 text-right break-words overflow-hidden leading-tight" 
+          <p
+            className="text-xs text-gray-400 text-right break-words overflow-hidden leading-tight"
             title={props.errorMessage}
             style={{
-              display: '-webkit-box',
+              display: "-webkit-box",
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              wordBreak: 'break-word',
-              hyphens: 'auto'
+              WebkitBoxOrient: "vertical",
+              wordBreak: "break-word",
+              hyphens: "auto",
             }}
           >
             {shortenErrorMessage(props.errorMessage)}
@@ -111,7 +125,7 @@ function StatusCircle({ status }: { status: boolean }) {
             <stop stopColor="#3FB950" />
             <stop offset="1" stopColor="#13641F" />
           </linearGradient>
-          
+
           {/* Red gradient for false status */}
           <linearGradient
             id="redGradient"
