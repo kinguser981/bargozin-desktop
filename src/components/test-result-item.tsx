@@ -83,8 +83,8 @@ export default function TestResultItem(props: {
           </span>
         </p>
         {props.responseTime && (
-          <p className="text-xs text-gray-400">
-            {formatResponseTime(props.responseTime)}
+          <p className="text-xs text-gray-400 text-left ml-4">
+            {formatResponseTime(props.responseTime)} { props.errorMessage ? `- ${props.errorMessage}` : "" }
           </p>
         )}
       </div>
@@ -97,21 +97,6 @@ export default function TestResultItem(props: {
           {props.status ? "قابل استفاده" : "مسدود شده"}
           <StatusCircle status={props.status} />
         </p>
-        {!props.status && props.errorMessage && (
-          <p
-            className="text-xs text-gray-400 text-right break-words overflow-hidden leading-tight"
-            title={props.errorMessage}
-            style={{
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              wordBreak: "break-word",
-              hyphens: "auto",
-            }}
-          >
-            {shortenErrorMessage(props.errorMessage)}
-          </p>
-        )}
       </div>
     </div>
   );

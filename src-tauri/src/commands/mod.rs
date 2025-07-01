@@ -1,6 +1,5 @@
 use tauri::{Emitter, AppHandle};
-use crate::dns::{DNS_SERVERS, test_single_dns_server};
-use crate::utils::validate_domain;
+use crate::dns::{DNS_SERVERS, test_single_dns_server, test_url_with_dns, UrlTestResult, test_url_with_all_dns_servers, BulkTestResult};
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use tokio::task::JoinHandle;
@@ -14,9 +13,9 @@ lazy_static::lazy_static! {
 
 #[tauri::command]
 pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(), String> {
-    let domain = domain.trim();
+    let domain = domain.trim().to_string();
     
-    if !validate_domain(domain) {
+    if domain.is_empty() {
         return Err("Please enter a valid domain name".to_string());
     }
 
@@ -26,7 +25,7 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
     // Cancel any existing tests
     {
         let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        if let Some(handles) = active_tasks.remove(domain) {
+        if let Some(handles) = active_tasks.remove(&domain) {
             for handle in handles {
                 handle.abort();
             }
@@ -36,7 +35,7 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
     let mut handles = Vec::new();
 
     for &dns_server in DNS_SERVERS {
-        let domain_clone = domain.to_string();
+        let domain_clone = domain.clone();
         let dns_server_string = dns_server.to_string();
         let app_handle_clone = app_handle.clone();
         
@@ -54,13 +53,13 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
     // Store handles for potential cancellation
     {
         let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.insert(domain.to_string(), handles);
+        active_tasks.insert(domain.clone(), handles);
     }
 
     // Wait for all tasks to complete by removing them from storage
     let stored_handles = {
         let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.remove(domain).unwrap_or_default()
+        active_tasks.remove(&domain).unwrap_or_default()
     };
 
     for handle in stored_handles {
@@ -94,4 +93,47 @@ pub async fn cancel_dns_tests() -> Result<(), String> {
     }
     
     Ok(())
-} 
+}
+
+#[tauri::command]
+pub async fn test_url_with_dns_server(url: String, dns_server: String) -> Result<UrlTestResult, String> {
+    let url = url.trim();
+    let dns_server = dns_server.trim();
+    
+    if url.is_empty() {
+        return Err("Please enter a valid URL".to_string());
+    }
+    
+    if dns_server.is_empty() {
+        return Err("Please enter a valid DNS server".to_string());
+    }
+    
+    // Validate URL format
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("URL must start with http:// or https://".to_string());
+    }
+    
+    // Call the DNS testing function
+    let result = test_url_with_dns(url.to_string(), dns_server.to_string()).await;
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn bulk_test_url_with_all_dns_servers(url: String) -> Result<BulkTestResult, String> {
+    let url = url.trim();
+    
+    if url.is_empty() {
+        return Err("Please enter a valid URL".to_string());
+    }
+    
+    // Validate URL format
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("URL must start with http:// or https://".to_string());
+    }
+    
+    // Call the bulk testing function
+    match test_url_with_all_dns_servers(url.to_string()).await {
+        Ok(result) => Ok(result),
+        Err(e) => Err(format!("Bulk test failed: {}", e)),
+    }
+}

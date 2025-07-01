@@ -1,141 +1,110 @@
-pub fn validate_domain(domain: &str) -> bool {
-    let domain = domain.trim();
-    
-    // Reject empty strings
-    if domain.is_empty() {
-        return false;
+use reqwest::Client;
+use std::fs;
+use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::time::Duration;
+use std::sync::Arc;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+use trust_dns_resolver::TokioAsyncResolver;
+use trust_dns_resolver::config::*;
+use url::Url;
+use reqwest::dns::{Resolve, Resolving, Name, Addrs};
+
+pub const DNS_CONFIG_URL: &str =
+    "https://raw.githubusercontent.com/403unlocker/403Unlocker-cli/refs/heads/main/config/dns.yml";
+
+pub fn dns_config_path() -> PathBuf {
+    let home = std::env::var("HOME").expect("HOME not set");
+    PathBuf::from(home).join(".config/403unlocker/dns.yml")
+}
+
+pub async fn read_dns_file(path: &PathBuf) -> anyhow::Result<Vec<String>> {
+    let content = fs::read_to_string(path)?;
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
+    let list = yaml["dnsServers"]
+        .as_sequence()
+        .ok_or_else(|| anyhow::anyhow!("dnsServers key missing"))?
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect();
+    Ok(list)
+}
+
+pub async fn download_config_file(url: &str, path: &PathBuf) -> anyhow::Result<()> {
+    let response = reqwest::get(url).await?;
+    let content = response.bytes().await?;
+    let parent = path.parent().unwrap();
+    tokio::fs::create_dir_all(parent).await?;
+    let mut file = File::create(path).await?;
+    file.write_all(&content).await?;
+    Ok(())
+}
+
+pub fn ensure_https(input: &str) -> Option<Url> {
+    let clean = input.trim().replace("http://", "").replace("https://", "");
+    Url::parse(&format!("https://{}/", clean)).ok()
+}
+
+// Custom DNS resolver that uses a specific DNS server
+struct CustomDnsResolver {
+    resolver: TokioAsyncResolver,
+}
+
+impl CustomDnsResolver {
+    fn new(dns_ip: &str) -> Option<Self> {
+        let resolver_config = ResolverConfig::from_parts(
+            None,
+            vec![],
+            vec![NameServerConfig {
+                socket_addr: format!("{}:53", dns_ip).parse::<SocketAddr>().ok()?,
+                protocol: Protocol::Udp,
+                tls_dns_name: None,
+                trust_negative_responses: true,
+                bind_addr: None,
+            }],
+        );
+
+        let resolver = TokioAsyncResolver::tokio(resolver_config, ResolverOpts::default());
+        Some(Self { resolver })
     }
-    
-    // Reject URLs (protocols)
-    if domain.starts_with("http://") 
-        || domain.starts_with("https://") 
-        || domain.starts_with("ftp://") 
-        || domain.starts_with("://") {
-        return false;
+}
+
+impl Resolve for CustomDnsResolver {
+    fn resolve(&self, name: Name) -> Resolving {
+        let resolver = self.resolver.clone();
+        Box::pin(async move {
+            let response = resolver.lookup_ip(name.as_str()).await
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+            
+            let addrs: Vec<SocketAddr> = response
+                .iter()
+                .map(|ip| SocketAddr::new(ip, 443))  // Always use 443 for HTTPS URLs
+                .collect();
+            
+            let addrs: Addrs = Box::new(addrs.into_iter());
+            Ok(addrs)
+        })
     }
+}
+
+pub async fn check_url_with_dns(url: &Url, dns_ip: &str) -> Option<(u16, String)> {
+    let resolver = CustomDnsResolver::new(dns_ip)?;
     
-    // Reject if contains URL patterns
-    if domain.contains("://") || domain.contains("?") || domain.contains("#") {
-        return false;
-    }
-    
-    // Reject if contains path separators (except at end which we'll handle)
-    if domain.contains('/') {
-        return false;
-    }
-    
-    // Must contain at least one dot
-    if !domain.contains('.') {
-        return false;
-    }
-    
-    // Cannot start or end with dot
-    if domain.starts_with('.') || domain.ends_with('.') {
-        return false;
-    }
-    
-    // Cannot start or end with hyphen
-    if domain.starts_with('-') || domain.ends_with('-') {
-        return false;
-    }
-    
-    // Check each label (part separated by dots)
-    let labels: Vec<&str> = domain.split('.').collect();
-    
-    // Must have at least 2 labels (e.g., "example.com")
-    if labels.len() < 2 {
-        return false;
-    }
-    
-    // Validate each label
-    for label in &labels {
-        if !validate_domain_label(label) {
-            return false;
+    let client = Client::builder()
+        .dns_resolver(Arc::new(resolver))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(10))
+        .user_agent("Mozilla/5.0 (compatible; 403Unlocker)")
+        .build()
+        .ok()?;
+
+    match client.get(url.as_str()).send().await {
+        Ok(res) => {
+            let code = res.status().as_u16();
+            let msg = res.status().canonical_reason().unwrap_or("Unknown").to_string();
+            Some((code, msg))
         }
-    }
-    
-    // TLD (last label) must be at least 2 characters and only letters
-    if let Some(tld) = &labels.last() {
-        if tld.len() < 2 || !tld.chars().all(|c| c.is_ascii_alphabetic()) {
-            return false;
-        }
-    }
-    
-    true
-}
-
-fn validate_domain_label(label: &str) -> bool {
-    // Label cannot be empty
-    if label.is_empty() {
-        return false;
-    }
-    
-    // Label cannot be longer than 63 characters
-    if label.len() > 63 {
-        return false;
-    }
-    
-    // Label cannot start or end with hyphen
-    if label.starts_with('-') || label.ends_with('-') {
-        return false;
-    }
-    
-    // Label can only contain letters, numbers, and hyphens
-    label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
-}
-
-pub fn format_response_time(time_ms: u64) -> String {
-    if time_ms < 1000 {
-        format!("{}ms", time_ms)
-    } else {
-        format!("{:.1}s", time_ms as f64 / 1000.0)
+        Err(_) => None
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_validate_domain() {
-        // Valid domains
-        assert!(validate_domain("example.com"));
-        assert!(validate_domain("subdomain.example.com"));
-        assert!(validate_domain("google.com"));
-        assert!(validate_domain("dl2.soft98.ir"));
-        assert!(validate_domain("test-site.org"));
-        
-        // Invalid: empty or malformed
-        assert!(!validate_domain(""));
-        assert!(!validate_domain("   "));
-        assert!(!validate_domain(".com"));
-        assert!(!validate_domain("example."));
-        assert!(!validate_domain("invalid"));
-        assert!(!validate_domain("no-tld"));
-        
-        // Invalid: URLs (should be rejected)
-        assert!(!validate_domain("https://dl2.soft98.ir/soft/i/Internet.Download.Manager.6.42.41.zip?1750036701"));
-        assert!(!validate_domain("http://example.com"));
-        assert!(!validate_domain("https://google.com"));
-        assert!(!validate_domain("ftp://files.example.com"));
-        
-        // Invalid: contains URL patterns
-        assert!(!validate_domain("example.com/path"));
-        assert!(!validate_domain("example.com?query=1"));
-        assert!(!validate_domain("example.com#fragment"));
-        assert!(!validate_domain("example.com:8080"));
-        
-        // Invalid: malformed domains
-        assert!(!validate_domain("-example.com"));
-        assert!(!validate_domain("example-.com"));
-        assert!(!validate_domain("example.c"));  // TLD too short
-        assert!(!validate_domain("example.123")); // TLD must be letters
-    }
-
-    #[test]
-    fn test_format_response_time() {
-        assert_eq!(format_response_time(500), "500ms");
-        assert_eq!(format_response_time(1500), "1.5s");
-        assert_eq!(format_response_time(2000), "2.0s");
-    }
-} 
