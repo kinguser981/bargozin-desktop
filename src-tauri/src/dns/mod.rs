@@ -1,10 +1,9 @@
 use std::net::IpAddr;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts, NameServerConfig, Protocol};
 use trust_dns_resolver::TokioAsyncResolver;
 use serde::{Deserialize, Serialize};
 use reqwest::Client;
-use std::collections::HashMap;
 use tokio::task;
 use std::path::PathBuf;
 use std::fs;
@@ -15,6 +14,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
 use reqwest::dns::{Resolve, Resolving, Name, Addrs};
+use futures_util::StreamExt;
 
 // Original DNS servers constants
 pub const DNS_SERVERS: &[&str] = &[
@@ -104,6 +104,29 @@ pub struct DnsServerResult {
     pub response_time_ms: u64,
     pub success: bool,
     pub error_message: Option<String>,
+}
+
+// Download speed testing structures
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DownloadSpeedResult {
+    pub dns_server: String,
+    pub url: String,
+    pub success: bool,
+    pub download_speed_mbps: f64,
+    pub downloaded_bytes: u64,
+    pub test_duration_seconds: f64,
+    pub error_message: Option<String>,
+    pub resolution_time_ms: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BulkDownloadTestResult {
+    pub url: String,
+    pub timeout_seconds: u64,
+    pub total_servers: usize,
+    pub successful_tests: Vec<DownloadSpeedResult>,
+    pub failed_tests: Vec<DownloadSpeedResult>,
+    pub test_duration_ms: u64,
 }
 
 // Utility functions for config management
@@ -381,126 +404,6 @@ fn ensure_https(domain: &str) -> String {
     result
 }
 
-pub async fn test_single_dns_server_with_url(domain: String, dns_server: String, session_id: u64, test_url: Option<String>) -> DnsTestResult {
-    let start_time = std::time::Instant::now();
-    
-    let dns_ip: IpAddr = match dns_server.parse() {
-        Ok(ip) => ip,
-        Err(e) => {
-            return DnsTestResult {
-                dns_server,
-                status: false,
-                response_time: None,
-                error_message: Some(format!("Invalid DNS server IP: {}", e)),
-                session_id,
-                http_status: HttpStatus::NotTested,
-                test_url: test_url.clone(),
-            };
-        }
-    };
-
-    let resolver_config = create_resolver_config(dns_ip);
-    let resolver_opts = create_resolver_opts();
-    let resolver = TokioAsyncResolver::tokio(resolver_config, resolver_opts);
-
-    match resolver.lookup_ip(&domain).await {
-        Ok(lookup_result) => {
-            let dns_response_time = start_time.elapsed().as_millis() as u64;
-            let has_ips = lookup_result.iter().count() > 0;
-            
-            if !has_ips {
-                return DnsTestResult {
-                    dns_server,
-                    status: false,
-                    response_time: Some(dns_response_time),
-                    error_message: Some("No IP addresses found".to_string()),
-                    session_id,
-                    http_status: HttpStatus::NotTested,
-                    test_url: test_url.clone(),
-                };
-            }
-
-            let http_status = if let Some(url) = &test_url {
-                test_http_request(url, dns_ip).await
-            } else {
-                HttpStatus::NotTested
-            };
-
-            let total_response_time = start_time.elapsed().as_millis() as u64;
-            
-            DnsTestResult {
-                dns_server,
-                status: has_ips,
-                response_time: Some(total_response_time),
-                error_message: None,
-                session_id,
-                http_status,
-                test_url: test_url.clone(),
-            }
-        }
-        Err(e) => {
-            let response_time = start_time.elapsed().as_millis() as u64;
-            DnsTestResult {
-                dns_server,
-                status: false,
-                response_time: Some(response_time),
-                error_message: Some(format!("DNS lookup failed: {}", e)),
-                session_id,
-                http_status: HttpStatus::NotTested,
-                test_url: test_url.clone(),
-            }
-        }
-    }
-}
-
-async fn test_http_request(url: &str, dns_ip: IpAddr) -> HttpStatus {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(DNS_TIMEOUT_SECONDS))
-        .build();
-
-    let client = match client {
-        Ok(c) => c,
-        Err(e) => return HttpStatus::Failed(format!("Failed to create HTTP client: {}", e)),
-    };
-
-    let parsed_url = match url::Url::parse(url) {
-        Ok(u) => u,
-        Err(e) => return HttpStatus::Failed(format!("Invalid URL: {}", e)),
-    };
-
-    let host = match parsed_url.host_str() {
-        Some(h) => h,
-        None => return HttpStatus::Failed("No host in URL".to_string()),
-    };
-
-    let mut headers = HashMap::new();
-    headers.insert("Host".to_string(), host.to_string());
-
-    let port = parsed_url.port_or_known_default().unwrap_or(80);
-    let scheme = parsed_url.scheme();
-    let path = parsed_url.path();
-    let query = parsed_url.query().map(|q| format!("?{}", q)).unwrap_or_default();
-    
-    let test_url = format!("{}://{}:{}{}{}", scheme, dns_ip, port, path, query);
-
-    match client.get(&test_url)
-        .header("Host", host)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-        .send()
-        .await
-    {
-        Ok(response) => {
-            let status_code = response.status().as_u16();
-            match status_code {
-                200..=299 => HttpStatus::Success,
-                403 => HttpStatus::Forbidden403,
-                _ => HttpStatus::Other(status_code),
-            }
-        }
-        Err(e) => HttpStatus::Failed(format!("HTTP request failed: {}", e)),
-    }
-}
-
 fn create_resolver_config(dns_ip: IpAddr) -> ResolverConfig {
     let name_server = NameServerConfig {
         socket_addr: (dns_ip, 53).into(),
@@ -727,5 +630,117 @@ async fn test_url_with_dns_impl(url: String, dns_server: String) -> UrlTestResul
                 http_request_time_ms: Some(http_request_time),
             }
         }
+    }
+}
+
+// Download speed testing functions
+async fn resolve_host_with_dns(host: &str, dns_server: &str) -> anyhow::Result<IpAddr> {
+    let socket_addr: SocketAddr = format!("{}:53", dns_server).parse()?;
+    let nameserver = NameServerConfig {
+        socket_addr,
+        protocol: Protocol::Udp,
+        tls_dns_name: None,
+        bind_addr: None,
+        trust_negative_responses: false,
+    };
+
+    let resolver_config = ResolverConfig::from_parts(None, vec![], vec![nameserver]);
+    let resolver = TokioAsyncResolver::tokio(resolver_config, ResolverOpts::default());
+
+    let response = resolver.lookup_ip(host).await?;
+    response
+        .iter()
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("No IP found for host"))
+}
+
+async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64) -> anyhow::Result<DownloadSpeedResult> {
+    println!("Starting download test: {} with DNS: {}", url, dns_ip);
+    let resolution_start = Instant::now();
+    
+    let parsed_url = reqwest::Url::parse(url)?;
+    let host = parsed_url.host_str().ok_or_else(|| anyhow::anyhow!("Invalid host"))?;
+    
+    println!("Parsed URL - host: {}, scheme: {}", host, parsed_url.scheme());
+
+    // Resolve host with custom DNS
+    println!("Resolving {} using DNS {}", host, dns_ip);
+    let resolved_ip = resolve_host_with_dns(host, dns_ip).await
+        .map_err(|e| anyhow::anyhow!("DNS resolution failed: {}", e))?;
+    
+    let resolution_time_ms = resolution_start.elapsed().as_millis() as u64;
+    println!("DNS resolution successful: {} -> {} ({}ms)", host, resolved_ip, resolution_time_ms);
+
+    // Determine port based on scheme
+    let port = match parsed_url.scheme() {
+        "https" => 443,
+        "http" => 80,
+        _ => return Err(anyhow::anyhow!("Unsupported scheme")),
+    };
+
+    let socket_addr = SocketAddr::new(resolved_ip, port);
+
+    let client = Client::builder()
+        .danger_accept_invalid_certs(true)
+        .timeout(std::time::Duration::from_secs(timeout_seconds + 10)) // Give extra time for connection
+        .resolve(host, socket_addr)
+        .build()?;
+
+    let download_start = Instant::now();
+    let timeout_duration = std::time::Duration::from_secs(timeout_seconds);
+    
+    let response = client.get(url).send().await
+        .map_err(|e| anyhow::anyhow!("HTTP request failed: {}", e))?;
+
+    let mut downloaded_bytes = 0u64;
+    let mut stream = response.bytes_stream();
+
+    while let Some(chunk_result) = stream.next().await {
+        // Check if timeout has been reached
+        if download_start.elapsed() >= timeout_duration {
+            break;
+        }
+
+        let chunk = chunk_result
+            .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+        downloaded_bytes += chunk.len() as u64;
+        
+        // Add periodic check for cancellation (every 1MB or every 1 second)
+        if downloaded_bytes % (1024 * 1024) == 0 || download_start.elapsed().as_secs() > 1 {
+            tokio::task::yield_now().await; // Allow other tasks to run and check for cancellation
+        }
+    }
+
+    let elapsed = download_start.elapsed().as_secs_f64();
+    let speed_mbps = (downloaded_bytes as f64 * 8.0) / (elapsed * 1_000_000.0);
+
+    Ok(DownloadSpeedResult {
+        dns_server: dns_ip.to_string(),
+        url: url.to_string(),
+        success: true,
+        download_speed_mbps: speed_mbps,
+        downloaded_bytes,
+        test_duration_seconds: elapsed,
+        error_message: None,
+        resolution_time_ms: Some(resolution_time_ms),
+    })
+}
+
+pub async fn test_download_speed_with_dns(url: String, dns_server: String, timeout_seconds: u64) -> DownloadSpeedResult {
+    // Add a small delay to allow for cancellation check
+    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    
+    match download_with_custom_dns(&url, &dns_server, timeout_seconds).await {
+        Ok(result) => result,
+        Err(e) => DownloadSpeedResult {
+            dns_server,
+            url,
+            success: false,
+            download_speed_mbps: 0.0,
+            downloaded_bytes: 0,
+            test_duration_seconds: 0.0,
+            error_message: Some(e.to_string()),
+            resolution_time_ms: None,
+        },
     }
 }

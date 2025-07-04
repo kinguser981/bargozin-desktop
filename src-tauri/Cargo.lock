@@ -253,6 +253,7 @@ dependencies = [
  "colored",
  "dirs 5.0.1",
  "futures",
+ "futures-util",
  "lazy_static",
  "regex",
  "reqwest",

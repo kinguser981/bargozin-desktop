@@ -6,6 +6,7 @@ export default function TestResultItem(props: {
   status: boolean;
   responseTime?: number;
   errorMessage?: string;
+  isDownloadSpeed?: boolean;
 }) {
   const [isCopied, setIsCopied] = useState(false);
 
@@ -22,6 +23,20 @@ export default function TestResultItem(props: {
 
   const formatResponseTime = (time?: number) => {
     if (time === undefined) return "";
+    
+    if (props.isDownloadSpeed) {
+      // Format as download speed in MB/s or KB/s for slower speeds
+      if (time === 0) return "0 KB/s";
+      if (time < 0.001) return "< 1 KB/s";
+      if (time < 1) {
+        // Show in KB/s for speeds under 1 MB/s
+        const kbps = Math.round(time * 1024 * 100) / 100;
+        return `${kbps} KB/s`;
+      }
+      return `${time.toFixed(2)} MB/s`;
+    }
+    
+    // Format as response time in ms/s
     return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`;
   };
 
@@ -78,13 +93,13 @@ export default function TestResultItem(props: {
           >
             {isCopied ? <CheckIcon /> : <Clipboard />}
           </button>
-          <span className={`transition-colors duration-200 ${isCopied ? "text-green-400" : ""}`}>
+          <span className={`transition-colors translate-y-[2.5px] duration-200 ${isCopied ? "text-green-400" : ""}`}>
             {props.dns}
           </span>
         </p>
         {props.responseTime && (
           <p className="text-xs text-gray-400 text-left ml-4">
-            {formatResponseTime(props.responseTime)} { props.errorMessage ? `- ${props.errorMessage}` : "" }
+            {formatResponseTime(props.responseTime)} { props.errorMessage ? `- ${shortenErrorMessage(props.errorMessage)}` : "" }
           </p>
         )}
       </div>
