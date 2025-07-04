@@ -40,41 +40,7 @@ export default function DownloadResultItem(props: {
     // Format as response time in ms/s
     return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`;
   };
-
-  const shortenErrorMessage = (message?: string) => {
-    if (!message) return "";
-
-    // Common DNS error patterns and their shortened versions
-    const errorMappings = [
-      {
-        pattern: /DNS lookup failed: request timed out/i,
-        short: "درخواست منقضی شد",
-      },
-      {
-        pattern: /DNS lookup failed: connection refused/i,
-        short: "اتصال رد شد",
-      },
-      { pattern: /DNS lookup failed: no response/i, short: "پاسخی دریافت نشد" },
-      {
-        pattern: /DNS lookup failed: network unreachable/i,
-        short: "شبکه در دسترس نیست",
-      },
-      { pattern: /DNS lookup failed: server failure/i, short: "خطای سرور" },
-      { pattern: /Invalid DNS server IP/i, short: "IP سرور نامعتبر" },
-      { pattern: /No IP addresses found/i, short: "آدرس IP یافت نشد" },
-      { pattern: /DNS lookup failed: no record/i, short: "رکوردی یافت نشد" },
-    ];
-
-    for (const mapping of errorMappings) {
-      if (mapping.pattern.test(message)) {
-        return mapping.short;
-      }
-    }
-
-    // If no pattern matches, return truncated version
-    return message.length > 35 ? message.substring(0, 32) + "..." : message;
-  };
-
+  
   return (
     <div
       className={`${
