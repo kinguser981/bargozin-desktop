@@ -296,25 +296,27 @@ export default function Download() {
                 ref={rightColumnRef}
                 className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4 w-full"
               >
-                {usableResults.map((result, index) => (
-                  <DownloadResultItem
-                    key={`usable-${index}`}
-                    dns={result.dns_server}
-                    status={result.success}
-                    responseTime={Math.round((result.download_speed_mbps / 8) * 1000) / 1000}
-                    errorMessage={result.error_message}
-                    isDownloadSpeed={true}
-                    isBest={true}
-                  />
-                ))}
-                {usableResults.length === 0 && isCompleted && (
+                {usableResults
+                  .sort((a, b) => b.download_speed_mbps - a.download_speed_mbps)
+                  .map((result, index) => (
+                    <DownloadResultItem
+                      key={`usable-${index}`}
+                      dns={result.dns_server}
+                      status={result.success}
+                      responseTime={result.download_speed_mbps / 8}
+                      errorMessage={result.error_message}
+                      isDownloadSpeed={true}
+                      isBest={index === 0}
+                    />
+                  ))}
+                {usableResults.filter(result => result.success).length === 0 && isCompleted && (
                   <div className="flex items-center justify-center h-full text-gray-400">
                     <p>متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
                   </div>
                 )}
               </div>
 
-              {usableResults.length > 5 && (
+              {usableResults.filter(result => result.success).length > 5 && (
                 <>
                   {/* Black Gradient Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0D1117] to-transparent pointer-events-none"></div>
@@ -339,24 +341,27 @@ export default function Download() {
                 ref={leftColumnRef}
                 className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
               >
-                {unusableResults.map((result, index) => (
-                  <DownloadResultItem
-                    key={`unusable-${index}`}
-                    dns={result.dns_server}
-                    status={result.success}
-                    responseTime={Math.round((result.download_speed_mbps / 8) * 1000) / 1000}
-                    errorMessage={result.error_message}
-                    isDownloadSpeed={true}
-                  />
-                ))}
-                {unusableResults.length === 0 && isCompleted && (
+                {unusableResults
+                  .filter(result => !result.success)
+                  .map((result, index) => (
+                    <DownloadResultItem
+                      key={`unusable-${index}`}
+                      dns={result.dns_server}
+                      status={result.success}
+                      responseTime={result.download_speed_mbps}
+                      errorMessage={result.error_message}
+                      isDownloadSpeed={true}
+                      isBest={false}
+                    />
+                  ))}
+                {unusableResults.filter(result => !result.success).length === 0 && isCompleted && (
                   <div className="flex items-center justify-center h-full text-gray-400">
                     <p>هیچ سرور DNS مسدودی یافت نشد!</p>
                   </div>
                 )}
               </div>
 
-              {unusableResults.length >= 5 && (
+              {unusableResults.filter(result => !result.success).length >= 5 && (
                 <>
                   {/* Black Gradient Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0D1117] to-transparent pointer-events-none"></div>
