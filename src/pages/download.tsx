@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import DoubleChevronDown from "../components/svg/double-chevron-down";
 import Question from "../components/svg/question";
 import Search from "../components/svg/search";
-import TestResultItem from "../components/test-result-item";
+import DownloadResultItem from "../components/download-result-item";
 
 // Type definition for download speed test results
 interface DownloadSpeedResult {
@@ -52,7 +52,7 @@ export default function Download() {
         setTimeout(() => scrollToBottom(rightColumnRef), 100);
       } else {
         console.log("Adding failed result:", result.dns_server, result.error_message);
-        setUnusableResults((prev) => [...prev, result]);
+        setUsableResults((prev) => [...prev, result]);
         // Auto-scroll left column when new unusable result arrives
         setTimeout(() => scrollToBottom(leftColumnRef), 100);
       }
@@ -286,29 +286,25 @@ export default function Download() {
 
       {/* Results Section - Takes remaining space */}
       <div className="flex-1 flex flex-col min-h-0">
-        <p className="text-center">نتایج تست</p>
+        <p className="text-center mb-2">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 dir-fa">
             {/* Right Column - Usable DNS servers */}
-            <div className="relative flex flex-col overflow-auto">
-              <div className="mb-2 text-center flex-shrink-0">
-                <span className="text-green-400 text-sm font-medium">
-                  قابل استفاده ({usableResults.length})
-                </span>
-              </div>
+            <div className="relative flex flex-col overflow-auto justify-center items-center">
               <div
                 ref={rightColumnRef}
-                className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
+                className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4 w-full"
               >
                 {usableResults.map((result, index) => (
-                  <TestResultItem
+                  <DownloadResultItem
                     key={`usable-${index}`}
                     dns={result.dns_server}
                     status={result.success}
                     responseTime={Math.round((result.download_speed_mbps / 8) * 1000) / 1000}
                     errorMessage={result.error_message}
                     isDownloadSpeed={true}
+                    isBest={true}
                   />
                 ))}
                 {usableResults.length === 0 && isCompleted && (
@@ -338,18 +334,13 @@ export default function Download() {
             </div>
 
             {/* Left Column - Unusable DNS servers */}
-            <div className="relative flex flex-col overflow-auto">
-              <div className="mb-2 text-center flex-shrink-0">
-                <span className="text-red-400 text-sm font-medium">
-                  مسدود شده ({unusableResults.length})
-                </span>
-              </div>
+            <div className="relative flex flex-col overflow-auto justify-center items-center">
               <div
                 ref={leftColumnRef}
                 className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
               >
                 {unusableResults.map((result, index) => (
-                  <TestResultItem
+                  <DownloadResultItem
                     key={`unusable-${index}`}
                     dns={result.dns_server}
                     status={result.success}
