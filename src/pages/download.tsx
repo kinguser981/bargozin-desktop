@@ -18,8 +18,6 @@ interface DownloadSpeedResult {
   resolution_time_ms?: number;
 }
 
-
-
 export default function Download() {
   // State variables
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +25,6 @@ export default function Download() {
   const [totalExpected] = useState(26); // Number of DNS servers
   const [isCompleted, setIsCompleted] = useState(false);
   const [usableResults, setUsableResults] = useState<DownloadSpeedResult[]>([]);
-  const [unusableResults, setUnusableResults] = useState<DownloadSpeedResult[]>([]);
   const [downloadTime, setDownloadTime] = useState(10);
   const [downloadUrl, setDownloadUrl] = useState("");
 
@@ -39,31 +36,42 @@ export default function Download() {
   // Event listeners for real-time updates
   useEffect(() => {
     console.log("Setting up download test event listeners");
-    
+
     // Listen for individual download test results
-    const unlisten = listen<DownloadSpeedResult>("download-test-result", (event) => {
-      const result = event.payload;
-      console.log("Received download test result:", result);
+    const unlisten = listen<DownloadSpeedResult>(
+      "download-test-result",
+      (event) => {
+        const result = event.payload;
+        console.log("Received download test result:", result);
 
-      if (result.success) {
-        console.log("Adding successful result:", result.dns_server, result.download_speed_mbps);
-        setUsableResults((prev) => [...prev, result]);
-        // Auto-scroll right column when new usable result arrives
-        setTimeout(() => scrollToBottom(rightColumnRef), 100);
-      } else {
-        console.log("Adding failed result:", result.dns_server, result.error_message);
-        setUsableResults((prev) => [...prev, result]);
-        // Auto-scroll left column when new unusable result arrives
-        setTimeout(() => scrollToBottom(leftColumnRef), 100);
+        if (result.success) {
+          console.log(
+            "Adding successful result:",
+            result.dns_server,
+            result.download_speed_mbps
+          );
+          setUsableResults((prev) => [...prev, result]);
+          // Auto-scroll right column when new usable result arrives
+          setTimeout(() => scrollToBottom(rightColumnRef), 100);
+        } else {
+          console.log(
+            "Adding failed result:",
+            result.dns_server,
+            result.error_message
+          );
+          setUsableResults((prev) => [...prev, result]);
+          // Auto-scroll left column when new unusable result arrives
+          setTimeout(() => scrollToBottom(leftColumnRef), 100);
+        }
+
+        // Update total results count
+        setTotalResults((prev) => {
+          const newCount = prev + 1;
+          console.log("Total results count:", newCount);
+          return newCount;
+        });
       }
-
-      // Update total results count
-      setTotalResults((prev) => {
-        const newCount = prev + 1;
-        console.log("Total results count:", newCount);
-        return newCount;
-      });
-    });
+    );
 
     // Listen for completion event
     const unlistenComplete = listen("download-test-complete", () => {
@@ -93,21 +101,20 @@ export default function Download() {
   // Reset state when component mounts to ensure clean start
   useEffect(() => {
     let isInitializing = false;
-    
+
     const initializeSession = async () => {
       if (isInitializing) {
         console.log("Already initializing, skipping...");
         return;
       }
-      
+
       isInitializing = true;
       console.log("Starting download test initialization...");
-      
+
       // Clear any existing state from previous sessions
       setIsLoading(false);
       setIsCompleted(false);
       setUsableResults([]);
-      setUnusableResults([]);
       setTotalResults(0);
 
       // Cancel any leftover tests from previous sessions
@@ -128,7 +135,7 @@ export default function Download() {
       currentSessionRef.current = sessionId;
       console.log("Initialized download test with session:", sessionId);
       console.log("Session stored in ref:", currentSessionRef.current);
-      
+
       isInitializing = false;
     };
 
@@ -140,7 +147,7 @@ export default function Download() {
     console.log("Download test button clicked");
     console.log("URL:", downloadUrl);
     console.log("Timeout:", downloadTime);
-    
+
     if (!downloadUrl.trim()) {
       alert("لطفاً یک URL معتبر وارد کنید");
       return;
@@ -156,14 +163,13 @@ export default function Download() {
     setIsLoading(true);
     setIsCompleted(false);
     setUsableResults([]);
-    setUnusableResults([]);
     setTotalResults(0);
 
     try {
       // Start download speed tests
       console.log("Invoking test_download_speed_all_dns command");
       console.log("Current session ref:", currentSessionRef.current);
-      
+
       await invoke("test_download_speed_all_dns", {
         url: downloadUrl.trim(),
         timeoutSeconds: downloadTime,
@@ -209,9 +215,14 @@ export default function Download() {
                     : "bg-green-500/30"
                 }`}
                 style={{
-                  width: isLoading && totalResults === 0 
-                    ? "100%" 
-                    : `${totalExpected > 0 ? (totalResults / totalExpected) * 100 : 0}%`,
+                  width:
+                    isLoading && totalResults === 0
+                      ? "100%"
+                      : `${
+                          totalExpected > 0
+                            ? (totalResults / totalExpected) * 100
+                            : 0
+                        }%`,
                 }}
               ></div>
             </div>
@@ -234,10 +245,11 @@ export default function Download() {
           {/* Progress Text */}
           {(totalResults > 0 || isLoading) && (
             <div className="absolute left-[200px] top-1/2 transform -translate-y-1/2 text-xs text-gray-400 z-20">
-              {isLoading && totalResults === 0 
-                ? "در حال شروع تست..." 
-                : `${totalResults} / ${totalExpected} ${isCompleted ? "تکمیل شد" : ""}`
-              }
+              {isLoading && totalResults === 0
+                ? "در حال شروع تست..."
+                : `${totalResults} / ${totalExpected} ${
+                    isCompleted ? "تکمیل شد" : ""
+                  }`}
             </div>
           )}
 
@@ -272,7 +284,12 @@ export default function Download() {
             >
               +
             </button>
-            <input type="text" className="h-full w-full flex items-center justify-center text-center" value={downloadTime} onChange={(e) => setDownloadTime(Number(e.target.value))} />
+            <input
+              type="text"
+              className="h-full w-full flex items-center justify-center text-center"
+              value={downloadTime}
+              onChange={(e) => setDownloadTime(Number(e.target.value))}
+            />
             <button
               onClick={() => setDownloadTime(downloadTime - 1)}
               className="h-full w-full flex items-center justify-center hover:bg-[#262a30] rounded-l-xl p-1 select-none cursor-pointer"
@@ -309,14 +326,16 @@ export default function Download() {
                       isBest={index === 0}
                     />
                   ))}
-                {usableResults.filter(result => result.success).length === 0 && isCompleted && (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <p>متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
-                  </div>
-                )}
+                {usableResults.filter((result) => result.success).length ===
+                  0 &&
+                  isCompleted && (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      <p>متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
+                    </div>
+                  )}
               </div>
 
-              {usableResults.filter(result => result.success).length > 5 && (
+              {usableResults.filter((result) => result.success).length > 5 && (
                 <>
                   {/* Black Gradient Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0D1117] to-transparent pointer-events-none"></div>
@@ -340,44 +359,7 @@ export default function Download() {
               <div
                 ref={leftColumnRef}
                 className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pb-4"
-              >
-                {unusableResults
-                  .filter(result => !result.success)
-                  .map((result, index) => (
-                    <DownloadResultItem
-                      key={`unusable-${index}`}
-                      dns={result.dns_server}
-                      status={result.success}
-                      responseTime={result.download_speed_mbps}
-                      errorMessage={result.error_message}
-                      isDownloadSpeed={true}
-                      isBest={false}
-                    />
-                  ))}
-                {unusableResults.filter(result => !result.success).length === 0 && isCompleted && (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <p>هیچ سرور DNS مسدودی یافت نشد!</p>
-                  </div>
-                )}
-              </div>
-
-              {unusableResults.filter(result => !result.success).length >= 5 && (
-                <>
-                  {/* Black Gradient Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0D1117] to-transparent pointer-events-none"></div>
-
-                  {/* More Items Button */}
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                    <button
-                      onClick={() => scrollToBottom(leftColumnRef)}
-                      className="text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-lg dir-fa flex items-center gap-2"
-                    >
-                      <DoubleChevronDown />
-                      موارد بیشتر
-                    </button>
-                  </div>
-                </>
-              )}
+              ></div>
             </div>
           </div>
         )}
