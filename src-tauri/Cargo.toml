@@ -34,3 +34,6 @@ dirs = "5.0"
 trust-dns-resolver = "0.23"
 lazy_static = "1.4"
 serde_yaml = "0.9"
+# Docker registry testing
+tar = "0.4"
+flate2 = "1.0"

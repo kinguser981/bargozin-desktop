@@ -61,7 +61,7 @@ export default function DownloadResultItem(props: {
             {isCopied ? <CheckIcon /> : <Clipboard />}
           </button>
           <span
-            className={`transition-colors translate-y-[2.5px] duration-200 ${
+            className={`transition-colors translate-y-[2.5px] text-left duration-200 ${
               isCopied ? "text-green-400" : ""
             }`}
           >

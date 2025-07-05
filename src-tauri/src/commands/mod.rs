@@ -1,5 +1,6 @@
 use tauri::{Emitter, AppHandle};
 use crate::dns::{DNS_SERVERS, test_single_dns_server, test_url_with_dns, UrlTestResult, test_url_with_all_dns_servers, BulkTestResult, test_download_speed_with_dns, DownloadSpeedResult};
+use crate::docker::{test_docker_registry_download_speed, validate_docker_image_name, docker_config_path, read_docker_registries_file, download_docker_config_file, DOCKER_CONFIG_URL};
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use tokio::task::JoinHandle;
@@ -288,4 +289,114 @@ pub async fn test_download_speed_all_dns(url: String, timeout_seconds: u64, app_
     }
     
     Ok(())
+}
+
+// Docker Registry Testing Commands
+
+#[tauri::command]
+pub async fn test_docker_registries(image_name: String, app_handle: AppHandle) -> Result<(), String> {
+    let image_name = image_name.trim().to_string();
+    
+    if image_name.is_empty() {
+        return Err("Please enter a valid Docker image name".to_string());
+    }
+
+    // Validate image name
+    if !validate_docker_image_name(&image_name) {
+        return Err("Invalid Docker image name format".to_string());
+    }
+
+    // Get new session ID and increment counter
+    let session_id = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
+
+    // Cancel any existing tests
+    {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        if let Some(handles) = active_tasks.remove(&image_name) {
+            for handle in handles {
+                handle.abort();
+            }
+        }
+    }
+
+    // Get registries list
+    let docker_file_path = docker_config_path();
+    let registries = match read_docker_registries_file(&docker_file_path).await {
+        Ok(list) => list,
+        Err(_) => {
+            // Download config file if it doesn't exist
+            if let Err(e) = download_docker_config_file(DOCKER_CONFIG_URL, &docker_file_path).await {
+                return Err(format!("Failed to download Docker registry config: {}", e));
+            }
+            match read_docker_registries_file(&docker_file_path).await {
+                Ok(list) => list,
+                Err(e) => {
+                    return Err(format!("Failed to read Docker registry config: {}", e));
+                }
+            }
+        }
+    };
+
+    let mut handles = Vec::new();
+    let timeout_seconds = 10; // Default timeout for Docker registry tests
+
+    for registry in registries {
+        let image_name_clone = image_name.clone();
+        let registry_clone = registry.clone();
+        let app_handle_clone = app_handle.clone();
+        
+        let handle = tokio::spawn(async move {
+            let result = test_docker_registry_download_speed(&registry_clone, &image_name_clone, timeout_seconds, session_id).await;
+            
+            if let Err(e) = app_handle_clone.emit("docker-registry-test-result", &result) {
+                eprintln!("Failed to emit Docker registry test result: {}", e);
+            }
+        });
+        
+        handles.push(handle);
+    }
+
+    // Store handles for potential cancellation
+    {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        active_tasks.insert(image_name.clone(), handles);
+    }
+
+    // Wait for all tasks to complete by removing them from storage
+    let stored_handles = {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        active_tasks.remove(&image_name).unwrap_or_default()
+    };
+
+    for handle in stored_handles {
+        let _ = handle.await;
+    }
+
+    if let Err(e) = app_handle.emit("docker-registry-test-complete", ()) {
+        eprintln!("Failed to emit Docker registry test completion event: {}", e);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn cancel_docker_registry_tests() -> Result<(), String> {
+    // Increment session counter to invalidate any pending results
+    let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
+    println!("Cancelling Docker registry tests, new session: {}", new_session);
+    
+    let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+    
+    for (image_name, handles) in active_tasks.drain() {
+        println!("Cancelling Docker registry tests for image: {}", image_name);
+        for handle in handles {
+            handle.abort();
+        }
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn validate_docker_image(image_name: String) -> Result<bool, String> {
+    Ok(validate_docker_image_name(&image_name))
 }
