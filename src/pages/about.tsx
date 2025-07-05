@@ -3,6 +3,8 @@ import PeopleItem from "../components/people-item";
 import Github from "../components/svg/github";
 import Linkedin from "../components/svg/linkedin";
 import Team from "../components/svg/team";
+import ArrowLeft from "../components/svg/arrow-left";
+import { Link } from "react-router";
 
 export default function About() {
   const handleLinkedInClick = async (url: string) => {
@@ -43,31 +45,31 @@ export default function About() {
             image="/profile.png"
             name="نام و نام خانوادگی"
             role="نقش"
-            linkedinUrl="https://linkedin.com/in/vesal-joolanejad"
+            linkedinUrl="https://linkedin.com/"
           />
           <PeopleItem
             image="/profile.png"
             name="نام و نام خانوادگی"
             role="نقش"
-            linkedinUrl="https://linkedin.com/in/vesal-joolanejad"
+            linkedinUrl="https://linkedin.com/"
           />
           <PeopleItem
             image="/profile.png"
             name="نام و نام خانوادگی"
             role="نقش"
-            linkedinUrl="https://linkedin.com/in/vesal-joolanejad"
+            linkedinUrl="https://linkedin.com/"
           />
           <PeopleItem
             image="/profile.png"
             name="نام و نام خانوادگی"
             role="نقش"
-            linkedinUrl="https://linkedin.com/in/vesal-joolanejad"
+            linkedinUrl="https://linkedin.com/"
           />
           <PeopleItem
             image="/profile.png"
             name="نام و نام خانوادگی"
             role="نقش"
-            linkedinUrl="https://linkedin.com/in/vesal-joolanejad"
+            linkedinUrl="https://linkedin.com/"
           />
         </div>
 
@@ -96,6 +98,10 @@ export default function About() {
             </div>
           </div>
         </div>
+        <Link to="/" className="text-center text-sm mt-5 flex justify-center items-center gap-2 cursor-pointer">
+          <ArrowLeft />
+          بازگشت به سرویس‌ها
+        </Link>
       </div>
     </div>
   );
