@@ -155,12 +155,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Open Source Community**: For inspiration and contributions
 - **Contributors**: Everyone who helps make Bargozin better
 
-## 📞 Support
-
-- **Documentation**: [Wiki](https://github.com/Vesal-J/bargozin-desktop/wiki)
-- **Community**: [Discord](https://discord.gg/bargozin) (Coming soon)
-- **Email**: bargozin@example.com
-
 ---
 
 <div align="center">
