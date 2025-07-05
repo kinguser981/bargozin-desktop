@@ -12,9 +12,7 @@ export default function Layout(props: { children: React.ReactNode }) {
         <Bargozin />
       </header>
       <section className="px-4 pb-8 text-white flex flex-1 min-h-0 w-full">
-        <main className="flex-1 overflow-auto mr-4">
-          {props.children}
-        </main>
+        <main className="flex-1 overflow-auto mr-4">{props.children}</main>
         <Sidebar />
       </section>
     </div>
