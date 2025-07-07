@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/Vesal-J/bargozin-desktop/discussions
+    about: Ask questions and discuss topics
+  - name: 📖 Documentation
+    url: https://github.com/Vesal-J/bargozin-desktop/blob/main/README.md
+    about: Read the documentation 
