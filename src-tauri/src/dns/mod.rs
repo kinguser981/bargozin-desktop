@@ -645,7 +645,13 @@ async fn resolve_host_with_dns(host: &str, dns_server: &str) -> anyhow::Result<I
     };
 
     let resolver_config = ResolverConfig::from_parts(None, vec![], vec![nameserver]);
-    let resolver = TokioAsyncResolver::tokio(resolver_config, ResolverOpts::default());
+    
+    // Configure resolver options with a reasonable timeout for DNS resolution
+    let mut resolver_opts = ResolverOpts::default();
+    resolver_opts.timeout = Duration::from_secs(5); // 5 second timeout for DNS resolution
+    resolver_opts.attempts = 2; // 2 attempts max
+    
+    let resolver = TokioAsyncResolver::tokio(resolver_config, resolver_opts);
 
     let response = resolver.lookup_ip(host).await?;
     response
@@ -656,6 +662,11 @@ async fn resolve_host_with_dns(host: &str, dns_server: &str) -> anyhow::Result<I
 
 async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64) -> anyhow::Result<DownloadSpeedResult> {
     println!("Starting download test: {} with DNS: {}", url, dns_ip);
+    
+    // Start the overall timer from the beginning (includes DNS resolution + connection + download)
+    let overall_start = Instant::now();
+    let timeout_duration = std::time::Duration::from_secs(timeout_seconds);
+    
     let resolution_start = Instant::now();
     
     let parsed_url = reqwest::Url::parse(url)?;
@@ -663,13 +674,24 @@ async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64)
     
     println!("Parsed URL - host: {}, scheme: {}", host, parsed_url.scheme());
 
-    // Resolve host with custom DNS
+    // Resolve host with custom DNS with timeout
     println!("Resolving {} using DNS {}", host, dns_ip);
-    let resolved_ip = resolve_host_with_dns(host, dns_ip).await
-        .map_err(|e| anyhow::anyhow!("DNS resolution failed: {}", e))?;
+    
+    // Apply timeout to DNS resolution
+    let resolved_ip = tokio::time::timeout(
+        timeout_duration,
+        resolve_host_with_dns(host, dns_ip)
+    ).await
+    .map_err(|_| anyhow::anyhow!("DNS resolution timed out after {} seconds", timeout_seconds))?
+    .map_err(|e| anyhow::anyhow!("DNS resolution failed: {}", e))?;
     
     let resolution_time_ms = resolution_start.elapsed().as_millis() as u64;
     println!("DNS resolution successful: {} -> {} ({}ms)", host, resolved_ip, resolution_time_ms);
+
+    // Check if we still have time left after DNS resolution
+    if overall_start.elapsed() >= timeout_duration {
+        return Err(anyhow::anyhow!("Operation timed out during DNS resolution"));
+    }
 
     // Determine port based on scheme
     let port = match parsed_url.scheme() {
@@ -680,14 +702,19 @@ async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64)
 
     let socket_addr = SocketAddr::new(resolved_ip, port);
 
+    // Calculate remaining time for HTTP operations
+    let remaining_time = timeout_duration.saturating_sub(overall_start.elapsed());
+    if remaining_time.is_zero() {
+        return Err(anyhow::anyhow!("Operation timed out before HTTP request"));
+    }
+
     let client = Client::builder()
         .danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_secs(timeout_seconds + 10)) // Give extra time for connection
+        .timeout(remaining_time) // Use remaining time, not extra time
         .resolve(host, socket_addr)
         .build()?;
 
     let download_start = Instant::now();
-    let timeout_duration = std::time::Duration::from_secs(timeout_seconds);
     
     let response = client.get(url).send().await
         .map_err(|e| anyhow::anyhow!("HTTP request failed: {}", e))?;
@@ -696,8 +723,8 @@ async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64)
     let mut stream = response.bytes_stream();
 
     while let Some(chunk_result) = stream.next().await {
-        // Check if timeout has been reached
-        if download_start.elapsed() >= timeout_duration {
+        // Check if overall timeout has been reached
+        if overall_start.elapsed() >= timeout_duration {
             break;
         }
 
@@ -711,7 +738,7 @@ async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64)
         }
     }
 
-    let elapsed = download_start.elapsed().as_secs_f64();
+    let elapsed = overall_start.elapsed().as_secs_f64(); // Use overall elapsed time
     let speed_mbps = (downloaded_bytes as f64 * 8.0) / (elapsed * 1_000_000.0);
 
     Ok(DownloadSpeedResult {
