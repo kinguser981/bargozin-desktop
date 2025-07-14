@@ -302,7 +302,7 @@ pub async fn test_download_speed_all_dns(url: String, timeout_seconds: u64, app_
 // Docker Registry Testing Commands - SIMPLIFIED
 
 #[tauri::command]
-pub async fn test_docker_registries(image_name: String, app_handle: AppHandle) -> Result<(), String> {
+pub async fn test_docker_registries(image_name: String, timeout_seconds: u64, app_handle: AppHandle) -> Result<(), String> {
     let image_name = image_name.trim().to_string();
     
     if image_name.is_empty() {
@@ -336,8 +336,7 @@ pub async fn test_docker_registries(image_name: String, app_handle: AppHandle) -
         }
     };
 
-    let timeout_seconds = 10; // Fixed 10-second timeout for Docker registry tests
-    println!("Testing {} registries sequentially", registries.len());
+    println!("Testing {} registries sequentially with {}s timeout", registries.len(), timeout_seconds);
 
     // Test registries one by one
     for (index, registry) in registries.iter().enumerate() {
