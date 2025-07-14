@@ -115,18 +115,3 @@ pub fn fetch_digest_manifest(registry_url: &str, image_name: &str, digest: &str)
     let digest_manifest: DigestManifest = serde_json::from_str(&response_text)?;
     Ok(digest_manifest)
 }
-
-pub fn fetch_layer_blob(registry_url: &str, image_name: &str, digest: &str) -> Result<Vec<u8>> {
-    let agent = create_http_client()?;
-    let url = format!("{}/v2/{}/blobs/{}", registry_url, image_name, digest);
-    
-    let response = agent.get(&url).call()?;
-    
-    if response.status() != 200 {
-        return Err(anyhow::anyhow!("HTTP error {}: {}", response.status(), url));
-    }
-
-    let mut bytes = Vec::new();
-    response.into_reader().read_to_end(&mut bytes)?;
-    Ok(bytes)
-}
