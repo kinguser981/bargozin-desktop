@@ -41,21 +41,24 @@ export default function Docker() {
 
   useEffect(() => {
     // Listen for individual Docker registry test results
-    const unlisten = listen<DockerRegistryTestResult>("docker-registry-test-result", (event) => {
-      const result = event.payload;
+    const unlisten = listen<DockerRegistryTestResult>(
+      "docker-registry-test-result",
+      (event) => {
+        const result = event.payload;
 
-      // Ignore results from old sessions using ref for current value
-      if (result.session_id !== currentSessionRef.current) {
-        console.log(
-          `Ignoring result from old session ${result.session_id}, current session: ${currentSessionRef.current}`
-        );
-        return;
+        // Ignore results from old sessions using ref for current value
+        if (result.session_id !== currentSessionRef.current) {
+          console.log(
+            `Ignoring result from old session ${result.session_id}, current session: ${currentSessionRef.current}`
+          );
+          return;
+        }
+
+        setAllResults((prev) => [...prev, result]);
+        // Auto-scroll when new result arrives
+        setTimeout(() => scrollToBottom(rightColumnRef), 100);
       }
-
-      setAllResults((prev) => [...prev, result]);
-      // Auto-scroll when new result arrives
-      setTimeout(() => scrollToBottom(rightColumnRef), 100);
-    });
+    );
 
     // Listen for completion event
     const unlistenComplete = listen("docker-registry-test-complete", () => {
@@ -114,18 +117,21 @@ export default function Docker() {
 
     // Basic frontend validation for better UX
     const trimmedDomain = domain.trim();
-    
+
     // Validate Docker image name format
     try {
       const isValid = await invoke<boolean>("validate_docker_image", {
         imageName: trimmedDomain,
       });
-      
+
       if (!isValid) {
-        toast.error("لطفاً یک نام ایمیج داکر معتبر وارد کنید (مثلا: ubuntu:latest)", {
-          position: "top-left",
-          className: "dir-fa text-right",
-        });
+        toast.error(
+          "لطفاً یک نام ایمیج داکر معتبر وارد کنید (مثلا: ubuntu:latest)",
+          {
+            position: "top-left",
+            className: "dir-fa text-right",
+          }
+        );
         return;
       }
     } catch (error) {
@@ -247,7 +253,14 @@ export default function Docker() {
         <div>
           <div className="flex items-center gap-2 justify-start dir-fa mb-4">
             <h2>مدت زمان تست هر رجیستری</h2>
-            <button className="cursor-pointer">
+            <button
+              className="cursor-pointer"
+              onClick={() => {
+                showInfo(
+                  "این زمان برای اینکه سرعت هر DNS را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر DNS را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است."
+                );
+              }}
+            >
               <Question className="w-5 h-5" />
             </button>
           </div>

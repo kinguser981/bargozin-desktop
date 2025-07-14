@@ -5,6 +5,7 @@ import DoubleChevronDown from "../components/svg/double-chevron-down";
 import Question from "../components/svg/question";
 import Search from "../components/svg/search";
 import DownloadResultItem from "../components/download-result-item";
+import { useAlertHelpers } from "../components/alert";
 
 // Type definition for download speed test results
 interface DownloadSpeedResult {
@@ -186,12 +187,21 @@ export default function Download() {
     }
   };
 
+  const { showInfo } = useAlertHelpers();
+
   return (
     <div className="text-right h-full flex flex-col">
       {/* Input Section - Fixed height */}
       <div className="flex-shrink-0">
         <p className="mb-4 flex justify-end items-center gap-2">
-          <button className="cursor-pointer" onClick={() => {}}>
+          <button
+            className="cursor-pointer"
+            onClick={() => {
+              showInfo(
+                "لینک فایلی را وارد کنید که به‌صورت مستقیم قابل دانلود باشد تا سرعت واقعی دانلود از دید DNSهای مختلف سنجیده شود. "
+              );
+            }}
+          >
             <Question className="w-5 h-5" />
           </button>
           آدرس فایل دانلودی{" "}
@@ -265,7 +275,14 @@ export default function Download() {
       <div>
         <div className="flex items-center gap-2 justify-start dir-fa mb-4">
           <h2>مدت زمان تست هر DNS</h2>
-          <button className="cursor-pointer">
+          <button
+            className="cursor-pointer"
+            onClick={() => {
+              showInfo(
+                "این زمان برای اینکه سرعت هر DNS را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر DNS را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است."
+              );
+            }}
+          >
             <Question className="w-5 h-5" />
           </button>
         </div>
