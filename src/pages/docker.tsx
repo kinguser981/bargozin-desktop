@@ -28,6 +28,7 @@ export default function Docker() {
   const [allResults, setAllResults] = useState<DockerRegistryTestResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(10);
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
@@ -87,12 +88,7 @@ export default function Docker() {
       setIsCompleted(false);
       setAllResults([]);
 
-      // Cancel any leftover tests from previous sessions
-      await invoke("cancel_docker_registry_tests").catch((error) => {
-        console.log("Failed to cancel leftover Docker registry tests:", error);
-      });
-
-      // Get current session ID
+      // Get current session ID WITHOUT cancelling
       const sessionId = await invoke<number>("get_current_session").catch(
         (error) => {
           console.log("Failed to get current session:", error);
@@ -153,6 +149,7 @@ export default function Docker() {
       // Start Docker registry tests (this will generate a new session ID in backend)
       await invoke("test_docker_registries", {
         imageName: domain.trim(),
+        timeoutSeconds: timeoutSeconds,
       });
 
       // Get the new session ID that was created for this test
@@ -245,6 +242,39 @@ export default function Docker() {
               ? "در حال بررسی..."
               : "بررسی رجیستری‌ها"}
           </button>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 justify-start dir-fa mb-4">
+            <h2>مدت زمان تست هر رجیستری</h2>
+            <button className="cursor-pointer">
+              <Question className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex items-end gap-2 dir-fa">
+            <div className="w-[132px] h-[60px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
+              <button
+                onClick={() => setTimeoutSeconds(timeoutSeconds + 1)}
+                className="h-full w-full flex items-center justify-center hover:bg-[#262a30] rounded-r-xl p-1 select-none cursor-pointer"
+              >
+                +
+              </button>
+              <input
+                type="text"
+                className="h-full w-full flex items-center justify-center text-center"
+                value={timeoutSeconds}
+                onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
+              />
+              <button
+                onClick={() => setTimeoutSeconds(timeoutSeconds - 1)}
+                className="h-full w-full flex items-center justify-center hover:bg-[#262a30] rounded-l-xl p-1 select-none cursor-pointer"
+              >
+                -
+              </button>
+            </div>
+            <p className="h-full text-md">ثانیه</p>
+          </div>
         </div>
       </div>
 

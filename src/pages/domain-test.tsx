@@ -93,12 +93,7 @@ export default function DomainTest() {
       setUsableResults([]);
       setUnusableResults([]);
 
-      // Cancel any leftover tests from previous sessions
-      await invoke("cancel_dns_tests").catch((error) => {
-        console.log("Failed to cancel leftover DNS tests:", error);
-      });
-
-      // Get current session ID
+      // Get current session ID WITHOUT cancelling
       const sessionId = await invoke<number>("get_current_session").catch(
         (error) => {
           console.log("Failed to get current session:", error);
@@ -107,7 +102,7 @@ export default function DomainTest() {
       );
 
       currentSessionRef.current = sessionId;
-      console.log("Initialized with session:", sessionId);
+      console.log("Initialized DNS with session:", sessionId);
     };
 
     initializeSession();

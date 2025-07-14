@@ -80,17 +80,21 @@ pub async fn get_current_session() -> Result<u64, String> {
 
 #[tauri::command]
 pub async fn cancel_dns_tests() -> Result<(), String> {
-    // Increment session counter to invalidate any pending results
-    let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
-    println!("Cancelling DNS tests, new session: {}", new_session);
-    
     let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
     
-    for (domain, handles) in active_tasks.drain() {
-        println!("Cancelling DNS tests for domain: {}", domain);
-        for handle in handles {
-            handle.abort();
+    // Only increment session if there are actually tasks to cancel
+    if !active_tasks.is_empty() {
+        let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
+        println!("Cancelling DNS tests, new session: {}", new_session);
+        
+        for (domain, handles) in active_tasks.drain() {
+            println!("Cancelling DNS tests for domain: {}", domain);
+            for handle in handles {
+                handle.abort();
+            }
         }
+    } else {
+        println!("No DNS tests to cancel");
     }
     
     Ok(())
@@ -98,19 +102,23 @@ pub async fn cancel_dns_tests() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn cancel_download_tests() -> Result<(), String> {
-    // Increment session counter to invalidate any pending results
-    let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
-    println!("Cancelling download tests, new session: {}", new_session);
-    
     {
         let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
         
-        // Cancel all active download tasks
-        for (identifier, handles) in active_tasks.drain() {
-            println!("Cancelling download tests for: {}", identifier);
-            for handle in handles {
-                handle.abort();
+        // Only increment session if there are actually tasks to cancel
+        if !active_tasks.is_empty() {
+            let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
+            println!("Cancelling download tests, new session: {}", new_session);
+            
+            // Cancel all active download tasks
+            for (identifier, handles) in active_tasks.drain() {
+                println!("Cancelling download tests for: {}", identifier);
+                for handle in handles {
+                    handle.abort();
+                }
             }
+        } else {
+            println!("No download tests to cancel");
         }
     } // MutexGuard is dropped here
     
@@ -291,10 +299,10 @@ pub async fn test_download_speed_all_dns(url: String, timeout_seconds: u64, app_
     Ok(())
 }
 
-// Docker Registry Testing Commands
+// Docker Registry Testing Commands - SIMPLIFIED
 
 #[tauri::command]
-pub async fn test_docker_registries(image_name: String, app_handle: AppHandle) -> Result<(), String> {
+pub async fn test_docker_registries(image_name: String, timeout_seconds: u64, app_handle: AppHandle) -> Result<(), String> {
     let image_name = image_name.trim().to_string();
     
     if image_name.is_empty() {
@@ -308,16 +316,7 @@ pub async fn test_docker_registries(image_name: String, app_handle: AppHandle) -
 
     // Get new session ID and increment counter
     let session_id = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
-
-    // Cancel any existing tests
-    {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        if let Some(handles) = active_tasks.remove(&image_name) {
-            for handle in handles {
-                handle.abort();
-            }
-        }
-    }
+    println!("Starting Docker registry tests for image: {} (session: {})", image_name, session_id);
 
     // Get registries list
     let docker_file_path = docker_config_path();
@@ -337,62 +336,42 @@ pub async fn test_docker_registries(image_name: String, app_handle: AppHandle) -
         }
     };
 
-    let mut handles = Vec::new();
-    let timeout_seconds = 10; // Default timeout for Docker registry tests
+    println!("Testing {} registries sequentially with {}s timeout", registries.len(), timeout_seconds);
 
-    for registry in registries {
-        let image_name_clone = image_name.clone();
-        let registry_clone = registry.clone();
-        let app_handle_clone = app_handle.clone();
+    // Test registries one by one
+    for (index, registry) in registries.iter().enumerate() {
+        println!("Testing registry {}/{}: {}", index + 1, registries.len(), registry);
         
-        let handle = tokio::spawn(async move {
-            let result = test_docker_registry_download_speed(&registry_clone, &image_name_clone, timeout_seconds, session_id).await;
-            
-            if let Err(e) = app_handle_clone.emit("docker-registry-test-result", &result) {
-                eprintln!("Failed to emit Docker registry test result: {}", e);
-            }
-        });
+        let mut result = test_docker_registry_download_speed(registry, &image_name, timeout_seconds).await;
         
-        handles.push(handle);
+        // Set the correct session ID
+        result.session_id = session_id;
+        
+        println!("Registry {} test completed: success={}, speed={:.2} Mbps", 
+                 registry, result.success, result.download_speed_mbps);
+        
+        // Emit result immediately
+        if let Err(e) = app_handle.emit("docker-registry-test-result", &result) {
+            eprintln!("Failed to emit Docker registry test result: {}", e);
+        } else {
+            println!("Successfully emitted result for {}", registry);
+        }
     }
 
-    // Store handles for potential cancellation
-    {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.insert(image_name.clone(), handles);
-    }
-
-    // Wait for all tasks to complete by removing them from storage
-    let stored_handles = {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.remove(&image_name).unwrap_or_default()
-    };
-
-    for handle in stored_handles {
-        let _ = handle.await;
-    }
-
+    // All tests completed
+    println!("All Docker registry tests completed");
     if let Err(e) = app_handle.emit("docker-registry-test-complete", ()) {
         eprintln!("Failed to emit Docker registry test completion event: {}", e);
+    } else {
+        println!("Successfully emitted completion event");
     }
+
     Ok(())
 }
 
 #[tauri::command]
 pub async fn cancel_docker_registry_tests() -> Result<(), String> {
-    // Increment session counter to invalidate any pending results
-    let new_session = CURRENT_SESSION.fetch_add(1, Ordering::SeqCst);
-    println!("Cancelling Docker registry tests, new session: {}", new_session);
-    
-    let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-    
-    for (image_name, handles) in active_tasks.drain() {
-        println!("Cancelling Docker registry tests for image: {}", image_name);
-        for handle in handles {
-            handle.abort();
-        }
-    }
-    
+    println!("Docker registry test cancellation not needed with simplified approach");
     Ok(())
 }
 
