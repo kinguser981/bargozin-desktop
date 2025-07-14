@@ -87,12 +87,7 @@ export default function Docker() {
       setIsCompleted(false);
       setAllResults([]);
 
-      // Cancel any leftover tests from previous sessions
-      await invoke("cancel_docker_registry_tests").catch((error) => {
-        console.log("Failed to cancel leftover Docker registry tests:", error);
-      });
-
-      // Get current session ID
+      // Get current session ID WITHOUT cancelling
       const sessionId = await invoke<number>("get_current_session").catch(
         (error) => {
           console.log("Failed to get current session:", error);

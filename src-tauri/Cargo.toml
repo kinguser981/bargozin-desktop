@@ -37,3 +37,4 @@ serde_yaml = "0.9"
 # Docker registry testing
 tar = "0.4"
 flate2 = "1.0"
+ureq = "2.9"

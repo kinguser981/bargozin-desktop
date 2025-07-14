@@ -117,13 +117,7 @@ export default function Download() {
       setUsableResults([]);
       setTotalResults(0);
 
-      // Cancel any leftover tests from previous sessions
-      console.log("Cancelling any existing download tests...");
-      await invoke("cancel_download_tests").catch((error) => {
-        console.log("Failed to cancel leftover download tests:", error);
-      });
-
-      // Get current session ID
+      // Get current session ID WITHOUT cancelling
       console.log("Getting current session ID...");
       const sessionId = await invoke<number>("get_current_session").catch(
         (error) => {
