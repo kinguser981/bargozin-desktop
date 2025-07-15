@@ -5,7 +5,7 @@ import DoubleChevronDown from "../components/svg/double-chevron-down";
 import Question from "../components/svg/question";
 import Search from "../components/svg/search";
 import DownloadResultItem from "../components/download-result-item";
-import { useAlertHelpers } from "../components/alert";
+import { useAlert, useAlertHelpers } from "../components/alert";
 
 // Type definition for download speed test results
 interface DownloadSpeedResult {
@@ -188,6 +188,7 @@ export default function Download() {
   };
 
   const { showInfo } = useAlertHelpers();
+  const { hideAlert } = useAlert();
 
   return (
     <div className="text-right h-full flex flex-col">
@@ -198,7 +199,18 @@ export default function Download() {
             className="cursor-pointer"
             onClick={() => {
               showInfo(
-                "لینک فایلی را وارد کنید که به‌صورت مستقیم قابل دانلود باشد تا سرعت واقعی دانلود از دید DNSهای مختلف سنجیده شود. "
+                "لینک فایلی را وارد کنید که به‌صورت مستقیم قابل دانلود باشد تا سرعت واقعی دانلود از دید DNSهای مختلف سنجیده شود. ",
+                {
+                  buttons: [
+                    {
+                      label: "متوجه شدم",
+                      action: () => {
+                        hideAlert("docker-image-validation-error");
+                      },
+                      variant: "none",
+                    },
+                  ],
+                }
               );
             }}
           >
@@ -241,7 +253,7 @@ export default function Download() {
                 handleDownloadTest();
               }
             }}
-            className="bg-[#30363d6a] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
+            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
             placeholder="لینکی که مستقیما به شروع دانلود منجر می‌شود را وارد کنید"
             disabled={isLoading}
           />
@@ -279,7 +291,18 @@ export default function Download() {
             className="cursor-pointer"
             onClick={() => {
               showInfo(
-                "این زمان برای اینکه سرعت هر DNS را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر DNS را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است."
+                "این زمان برای اینکه سرعت هر DNS را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر DNS را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است.",
+                {
+                  buttons: [
+                    {
+                      label: "متوجه شدم",
+                      action: () => {
+                        hideAlert("docker-image-validation-error");
+                      },
+                      variant: "none",
+                    },
+                  ],
+                }
               );
             }}
           >

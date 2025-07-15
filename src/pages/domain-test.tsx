@@ -1,4 +1,4 @@
-import { useAlertHelpers } from "../components/alert";
+import { useAlert, useAlertHelpers } from "../components/alert";
 import DoubleChevronDown from "../components/svg/double-chevron-down";
 import Question from "../components/svg/question";
 import Search from "../components/svg/search";
@@ -18,6 +18,7 @@ interface DnsTestResult {
 
 export default function DomainTest() {
   const { showInfo, showError } = useAlertHelpers();
+  const { hideAlert } = useAlert();
   const leftColumnRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const currentSessionRef = useRef<number>(0);
@@ -110,12 +111,10 @@ export default function DomainTest() {
 
   const handleDnsTest = async () => {
     if (!domain.trim()) {
-      toast.error("لطفاً یک دامنه وارد کنید",
-        {
-          position: "top-left",
-          className: "text-right dir-fa",
-        }
-      );
+      toast.error("لطفاً یک دامنه وارد کنید", {
+        position: "top-left",
+        className: "text-right dir-fa",
+      });
       return;
     }
 
@@ -127,13 +126,10 @@ export default function DomainTest() {
       trimmedDomain.includes("?") ||
       trimmedDomain.includes("#")
     ) {
-      toast.error(
-        "لطفاً فقط نام دامنه وارد کنید (مثلا: google.com)",
-        {
-          position: "top-left",
-          className: "dir-fa text-right",
-        }
-      );
+      toast.error("لطفاً فقط نام دامنه وارد کنید (مثلا: google.com)", {
+        position: "top-left",
+        className: "dir-fa text-right",
+      });
       return;
     }
 
@@ -176,7 +172,18 @@ export default function DomainTest() {
             className="cursor-pointer"
             onClick={() =>
               showInfo(
-                "دامنه موردنظر خود را وارد کنید تا بررسی کنیم کدام سرورهای DNS می‌توانند آن را با موفقیت باز کنند."
+                "دامنه موردنظر خود را وارد کنید تا بررسی کنیم کدام سرورهای DNS می‌توانند آن را با موفقیت باز کنند.",
+                {
+                  buttons: [
+                    {
+                      label: "متوجه شدم",
+                      action: () => {
+                        hideAlert("docker-image-validation-error");
+                      },
+                      variant: "none",
+                    },
+                  ],
+                }
               )
             }
           >
@@ -206,7 +213,7 @@ export default function DomainTest() {
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleDnsTest()}
-            className="bg-[#30363d6a] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
+            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
             placeholder="مثلا spotify.com"
             disabled={isLoading}
           />

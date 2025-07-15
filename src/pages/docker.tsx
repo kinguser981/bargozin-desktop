@@ -1,4 +1,4 @@
-import { useAlertHelpers } from "../components/alert";
+import { useAlertHelpers, useAlert } from "../components/alert";
 import DoubleChevronDown from "../components/svg/double-chevron-down";
 import Question from "../components/svg/question";
 import Search from "../components/svg/search";
@@ -21,6 +21,7 @@ interface DockerRegistryTestResult {
 
 export default function Docker() {
   const { showInfo, showError } = useAlertHelpers();
+  const { hideAlert } = useAlert();
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const currentSessionRef = useRef<number>(0);
 
@@ -181,7 +182,18 @@ export default function Docker() {
             className="cursor-pointer"
             onClick={() =>
               showInfo(
-                "در این فیلد باید نام کامل ایمیج داکر مورد نظر خود را وارد کنید. این نام شامل ریپازیتوری، تگ و در صورت نیاز، آدرس ریجیستری خواهد بود. اطمینان حاصل کنید که نام وارد شده دقیق و صحیح باشد تا فرآیند دانلود به درستی انجام شود."
+                "در این فیلد باید نام کامل ایمیج داکر مورد نظر خود را وارد کنید. این نام شامل ریپازیتوری، تگ و در صورت نیاز، آدرس ریجیستری خواهد بود. اطمینان حاصل کنید که نام وارد شده دقیق و صحیح باشد تا فرآیند دانلود به درستی انجام شود.",
+                {
+                  buttons: [
+                    {
+                      label: "متوجه شدم",
+                      action: () => {
+                        hideAlert("docker-image-validation-error");
+                      },
+                      variant: "none",
+                    },
+                  ],
+                }
               )
             }
           >
@@ -220,9 +232,12 @@ export default function Docker() {
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleDockerRegistryTest()}
-            className="bg-[#30363d6a] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
+            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
             placeholder="مثلا ubuntu:latest"
             disabled={isLoading}
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck="false"
           />
 
           {/* Progress Text */}
@@ -257,7 +272,18 @@ export default function Docker() {
               className="cursor-pointer"
               onClick={() => {
                 showInfo(
-                  "این زمان برای اینکه سرعت هر DNS را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر DNS را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است."
+                  "این زمان برای اینکه سرعت هر رجیستری را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر رجیستری را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است.",
+                  {
+                    buttons: [
+                      {
+                        label: "متوجه شدم",
+                        action: () => {
+                          hideAlert("docker-image-validation-error");
+                        },
+                        variant: "none",
+                      },
+                    ],
+                  }
                 );
               }}
             >
