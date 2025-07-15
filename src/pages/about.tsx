@@ -15,6 +15,21 @@ export default function About() {
     }
   };
 
+  const team = [
+    {
+      name: "زهرا محمدی",
+      role: "طراح محصول",
+      linkedinUrl: "https://www.linkedin.com/in/zhrwmmdi/",
+      image: "https://media.licdn.com/dms/image/v2/D4D03AQHMcokiDxvy9A/profile-displayphoto-shrink_400_400/B4DZOA_NEmHgAg-/0/1733035873156?e=1758153600&v=beta&t=jN_6D8tPC9feFPQku1Wx3T6jfmR4zTc7yr0xMfFsMuA",
+    },
+    {
+      name: "وصال ژولانژاد",
+      role: "توسعه دهنده",
+      linkedinUrl: "https://www.linkedin.com/in/vesal-joolanejad/",
+      image: "https://media.licdn.com/dms/image/v2/D4D03AQH1Qz4sc2C4gw/profile-displayphoto-scale_400_400/B4DZgMFP6pHwAg-/0/1752549360004?e=1758153600&v=beta&t=Pe_E1RDaLvGrPOqwhF7AZFL0mTVjKd2WjASHO44Gmhk",
+    },
+  ];
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-center">درباره ما</h1>
@@ -40,37 +55,16 @@ export default function About() {
           تیم ما
           <Team className="scale-75" />
         </h1>
-        <div className="flex justify-between">
-          <PeopleItem
-            image="/profile.png"
-            name="نام و نام خانوادگی"
-            role="نقش"
-            linkedinUrl="https://linkedin.com/"
-          />
-          <PeopleItem
-            image="/profile.png"
-            name="نام و نام خانوادگی"
-            role="نقش"
-            linkedinUrl="https://linkedin.com/"
-          />
-          <PeopleItem
-            image="/profile.png"
-            name="نام و نام خانوادگی"
-            role="نقش"
-            linkedinUrl="https://linkedin.com/"
-          />
-          <PeopleItem
-            image="/profile.png"
-            name="نام و نام خانوادگی"
-            role="نقش"
-            linkedinUrl="https://linkedin.com/"
-          />
-          <PeopleItem
-            image="/profile.png"
-            name="نام و نام خانوادگی"
-            role="نقش"
-            linkedinUrl="https://linkedin.com/"
-          />
+        <div className="flex justify-center">
+          {team.map((person, index) => (
+            <PeopleItem
+              key={index}
+              image={person.image}
+              name={person.name}
+              role={person.role}
+              linkedinUrl={person.linkedinUrl}
+            />
+          ))}
         </div>
 
         <div className="mt-5">
@@ -85,7 +79,7 @@ export default function About() {
               className="flex justify-center items-center gap-2 cursor-pointer"
               onClick={() =>
                 handleLinkedInClick(
-                  "https://github.com/vesal-j/bargozin-desktop"
+                  "https://github.com/403unlocker/bargozin-desktop"
                 )
               }
             >
@@ -98,7 +92,10 @@ export default function About() {
             </div>
           </div>
         </div>
-        <Link to="/" className="text-center text-sm mt-5 flex justify-center items-center gap-2 cursor-pointer">
+        <Link
+          to="/"
+          className="text-center text-sm mt-5 flex justify-center items-center gap-2 cursor-pointer"
+        >
           <ArrowLeft />
           بازگشت به سرویس‌ها
         </Link>
