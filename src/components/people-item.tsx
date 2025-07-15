@@ -19,17 +19,20 @@ export default function PeopleItem(props: {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center min-w-[250px]">
       <div className="w-[80px] h-[80px] rounded-full bg-gradient-to-br from-[#2F81F7] to-[#1C4C91] p-[4px]">
         <img
           src={props.image}
           alt={props.name}
           className="w-full h-full rounded-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = "/profile.png";
+          }}
         />
       </div>
       <div className="flex flex-col items-center justify-center mt-5">
         <h4 className="text-sm font-bold text-center">
-          {props.name} <span className="text-xs text-gray-500 font-normal">{props.role}</span>
+          {props.name} <span className="text-xs text-[#CDCDCD] font-thin">{props.role}</span>
         </h4>
         {props.linkedinUrl && (
           <button 
