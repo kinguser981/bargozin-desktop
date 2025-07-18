@@ -7,6 +7,8 @@ import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
+import XIcon from "../components/svg/x-icon";
+import CheckIcon from "../components/svg/check-icon";
 
 interface DnsTestResult {
   dns_server: string;
@@ -119,9 +121,9 @@ export default function DomainTest() {
     }
 
     // Basic frontend validation for better UX
-    const trimmedDomain = domain.trim();
+    let trimmedDomain = domain.trim();
+    trimmedDomain = trimmedDomain.replace("https://", "");
     if (
-      trimmedDomain.includes("://") ||
       trimmedDomain.includes("/") ||
       trimmedDomain.includes("?") ||
       trimmedDomain.includes("#")
@@ -216,6 +218,9 @@ export default function DomainTest() {
             className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
             placeholder="مثلا spotify.com"
             disabled={isLoading}
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck="false"
           />
 
           {/* Progress Text */}
@@ -267,8 +272,10 @@ export default function DomainTest() {
                   />
                 ))}
                 {usableResults.length === 0 && isCompleted && (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <p>متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center">
+                    <XIcon />
+                    <p className="text-[#F85149] mt-4">متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
+                    <p className="mt-2">لطفا اتصال اینترنت خود را بررسی کرده و مجدداً تلاش کنید.</p>
                   </div>
                 )}
               </div>
@@ -314,7 +321,8 @@ export default function DomainTest() {
                 ))}
                 {unusableResults.length === 0 && isCompleted && (
                   <div className="flex items-center justify-center h-full text-gray-400">
-                    <p>هیچ سرور DNS مسدودی یافت نشد!</p>
+                    <CheckIcon />
+                    <p className="text-[#3FB950]">همه DNS های بررسی‌شده در دسترس هستند</p>
                   </div>
                 )}
               </div>
