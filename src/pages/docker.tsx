@@ -1,4 +1,4 @@
-import { useAlertHelpers } from "../components/alert";
+import { useAlertHelpers, useAlert } from "../components/alert";
 import DoubleChevronDown from "../components/svg/double-chevron-down";
 import Question from "../components/svg/question";
 import Search from "../components/svg/search";
@@ -7,6 +7,7 @@ import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
+import Info from "../components/svg/info";
 
 interface DockerRegistryTestResult {
   registry: string;
@@ -21,6 +22,7 @@ interface DockerRegistryTestResult {
 
 export default function Docker() {
   const { showInfo, showError } = useAlertHelpers();
+  const { hideAlert } = useAlert();
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const currentSessionRef = useRef<number>(0);
 
@@ -181,7 +183,18 @@ export default function Docker() {
             className="cursor-pointer"
             onClick={() =>
               showInfo(
-                "در این فیلد باید نام کامل ایمیج داکر مورد نظر خود را وارد کنید. این نام شامل ریپازیتوری، تگ و در صورت نیاز، آدرس ریجیستری خواهد بود. اطمینان حاصل کنید که نام وارد شده دقیق و صحیح باشد تا فرآیند دانلود به درستی انجام شود."
+                "در این فیلد باید نام کامل ایمیج داکر مورد نظر خود را وارد کنید. این نام شامل ریپازیتوری، تگ و در صورت نیاز، آدرس ریجیستری خواهد بود. اطمینان حاصل کنید که نام وارد شده دقیق و صحیح باشد تا فرآیند دانلود به درستی انجام شود.",
+                {
+                  buttons: [
+                    {
+                      label: "متوجه شدم",
+                      action: () => {
+                        hideAlert("docker-image-validation-error");
+                      },
+                      variant: "none",
+                    },
+                  ],
+                }
               )
             }
           >
@@ -220,9 +233,12 @@ export default function Docker() {
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleDockerRegistryTest()}
-            className="bg-[#30363d6a] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
+            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
             placeholder="مثلا ubuntu:latest"
             disabled={isLoading}
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck="false"
           />
 
           {/* Progress Text */}
@@ -257,7 +273,18 @@ export default function Docker() {
               className="cursor-pointer"
               onClick={() => {
                 showInfo(
-                  "این زمان برای اینکه سرعت هر DNS را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر DNS را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است."
+                  "این زمان برای اینکه سرعت هر رجیستری را بسنجیم، به آن فرصت می‌دهیم تا در یک بازه زمانی مشخص، بخشی از فایل شما را دانلود کند. با این روش، سرعت دانلود هر رجیستری را مشخص می‌کنیم.پیشنهاد ما برای این زمان، بین ۷ تا ۱۵ ثانیه است.",
+                  {
+                    buttons: [
+                      {
+                        label: "متوجه شدم",
+                        action: () => {
+                          hideAlert("docker-image-validation-error");
+                        },
+                        variant: "none",
+                      },
+                    ],
+                  }
                 );
               }}
             >
@@ -288,12 +315,34 @@ export default function Docker() {
             </div>
             <p className="h-full text-md">ثانیه</p>
           </div>
+
+          <div className="text-right dir-fa mt-3 text-sm text-[#F5C518] flex items-center h-[20px]">
+            {timeoutSeconds <= 5 ? (
+              <>
+                <Info fill="#F5C518" />
+                <p className="mr-1">
+                  زمان تست کوتاه (کمتر از ۷ ثانیه) ممکن است نتایج را نامعتبر
+                  کند.
+                </p>
+              </>
+            ) : null}
+
+            {timeoutSeconds > 10 ? (
+              <>
+                <Info fill="#F5C518" />
+                <p className="mr-1">
+                  زمان تست طولانی (بیشتر از ۱۵ ثانیه) می‌تواند انتظار شما را به
+                  شدت افزایش دهد.{" "}
+                </p>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
 
       {/* Results Section - Takes remaining space */}
       <div className="flex-1 flex flex-col min-h-0">
-        <p className="text-center mb-2">نتایج تست</p>
+        <p className="text-center mb-2 mt-2">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 dir-fa">

@@ -37,7 +37,7 @@ export default function PeopleItem(props: {
         {props.linkedinUrl && (
           <button 
             onClick={handleLinkedInClick}
-            className="flex items-center gap-2 text-xs font-normal underline cursor-pointer hover:text-blue-600 transition-colors"
+            className="people-item-text flex items-center gap-2 text-xs font-normal underline cursor-pointer"
           >
             پروفایل لینکدین
             <Linkedin />

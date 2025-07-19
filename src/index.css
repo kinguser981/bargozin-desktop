@@ -236,3 +236,11 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #30363d #161b22;
 }
+
+.people-item-text:hover {
+  color: #155dfc;
+}
+
+.people-item-text:hover path {
+  stroke: #155dfc !important;
+}
