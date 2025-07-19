@@ -7,6 +7,7 @@ import { useRef, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
+import Info from "../components/svg/info";
 
 interface DockerRegistryTestResult {
   registry: string;
@@ -314,12 +315,34 @@ export default function Docker() {
             </div>
             <p className="h-full text-md">ثانیه</p>
           </div>
+
+          <div className="text-right dir-fa mt-3 text-sm text-[#F5C518] flex items-center h-[20px]">
+            {timeoutSeconds <= 5 ? (
+              <>
+                <Info fill="#F5C518" />
+                <p className="mr-1">
+                  زمان تست کوتاه (کمتر از ۷ ثانیه) ممکن است نتایج را نامعتبر
+                  کند.
+                </p>
+              </>
+            ) : null}
+
+            {timeoutSeconds > 10 ? (
+              <>
+                <Info fill="#F5C518" />
+                <p className="mr-1">
+                  زمان تست طولانی (بیشتر از ۱۵ ثانیه) می‌تواند انتظار شما را به
+                  شدت افزایش دهد.{" "}
+                </p>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
 
       {/* Results Section - Takes remaining space */}
       <div className="flex-1 flex flex-col min-h-0">
-        <p className="text-center mb-2">نتایج تست</p>
+        <p className="text-center mb-2 mt-2">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 dir-fa">

@@ -6,6 +6,7 @@ import Question from "../components/svg/question";
 import Search from "../components/svg/search";
 import DownloadResultItem from "../components/download-result-item";
 import { useAlert, useAlertHelpers } from "../components/alert";
+import Info from "../components/svg/info";
 
 // Type definition for download speed test results
 interface DownloadSpeedResult {
@@ -320,9 +321,11 @@ export default function Download() {
             </button>
             <input
               type="text"
-              className="h-full w-full flex items-center justify-center text-center"
+              className={`h-full w-full flex items-center justify-center text-center ${
+                downloadTime <= 5 || downloadTime > 10 ? "text-[#F5C518]" : ""
+              }`}
               value={downloadTime}
-              onChange={(e) => setDownloadTime(Number(e.target.value))}
+              onChange={(e) => setDownloadTime(Number(e.target.value) || 0)}
             />
             <button
               onClick={() => setDownloadTime(downloadTime - 1)}
@@ -333,10 +336,30 @@ export default function Download() {
           </div>
           <p className="h-full text-md">ثانیه</p>
         </div>
+        <div className="text-right dir-fa mt-3 text-sm text-[#F5C518] flex items-center h-[20px]">
+          {downloadTime <= 5 ? (
+            <>
+              <Info fill="#F5C518" />
+              <p className="mr-1">
+                زمان تست کوتاه (کمتر از ۷ ثانیه) ممکن است نتایج را نامعتبر کند.
+              </p>
+            </>
+          ) : null}
+
+          {downloadTime > 10 ? (
+            <>
+              <Info fill="#F5C518" />
+              <p className="mr-1">
+                زمان تست طولانی (بیشتر از ۱۵ ثانیه) می‌تواند انتظار شما را به
+                شدت افزایش دهد.{" "}
+              </p>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {/* Results Section - Takes remaining space */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 mt-2">
         <p className="text-center mb-2">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
