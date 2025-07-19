@@ -9,6 +9,7 @@ import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
 import XIcon from "../components/svg/x-icon";
 import CheckIcon from "../components/svg/check-icon";
+import Retry from "../components/svg/retry";
 
 interface DnsTestResult {
   dns_server: string;
@@ -274,8 +275,19 @@ export default function DomainTest() {
                 {usableResults.length === 0 && isCompleted && (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center">
                     <XIcon />
-                    <p className="text-[#F85149] mt-4">متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد</p>
-                    <p className="mt-2">لطفا اتصال اینترنت خود را بررسی کرده و مجدداً تلاش کنید.</p>
+                    <p className="text-[#F85149] mt-4">
+                      متأسفانه هیچ سرور DNS قابل استفاده‌ای یافت نشد
+                    </p>
+                    <p className="mt-2">
+                      لطفا اتصال اینترنت خود را بررسی کرده و مجدداً تلاش کنید.
+                    </p>
+                    <button
+                      onClick={handleDnsTest}
+                      className="flex gap-2 mt-2 cursor-pointer text-white hover:text-[#848484] transition-colors duration-200 shadow-lg dir-fa items-center justify-center px-4 py-2 rounded-lg text-sm font-medium"
+                    >
+                      <Retry />
+                      تست مجدد
+                    </button>
                   </div>
                 )}
               </div>
@@ -322,7 +334,9 @@ export default function DomainTest() {
                 {unusableResults.length === 0 && isCompleted && (
                   <div className="flex items-center justify-center h-full text-gray-400">
                     <CheckIcon />
-                    <p className="text-[#3FB950]">همه DNS های بررسی‌شده در دسترس هستند</p>
+                    <p className="text-[#3FB950]">
+                      همه DNS های بررسی‌شده در دسترس هستند
+                    </p>
                   </div>
                 )}
               </div>
