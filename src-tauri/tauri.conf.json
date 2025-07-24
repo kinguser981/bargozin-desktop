@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "Bargozin",
-        "width": 990,
+        "width": 1246,
         "height": 740,
-        "minWidth": 990,
+        "minWidth": 1246,
         "minHeight": 740
       }
     ],

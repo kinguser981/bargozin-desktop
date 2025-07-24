@@ -167,7 +167,7 @@ export default function DomainTest() {
   const totalExpected = 26; // Total number of DNS servers
 
   return (
-    <div className="text-right h-full flex flex-col">
+    <div className="text-right h-full flex flex-col px-[35px]">
       {/* Input Section - Fixed height */}
       <div className="flex-shrink-0">
         <p className="mb-4 flex justify-end items-center gap-2">

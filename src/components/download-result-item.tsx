@@ -45,7 +45,7 @@ export default function DownloadResultItem(props: {
     <div
       className={`${
         props.isBest ? "bg-[#263B43] border-[#38727C] border" : props.responseTime == 0 ? "bg-[#301B1F]" : "bg-[#30363D]"
-      } h-[50px] w-full rounded-lg mb-2 flex justify-between items-center px-1 dir-en`}
+      } h-[50px] w-full rounded-lg mb-2 flex justify-between items-center px-4 dir-en`}
     >
       <div className="flex flex-col">
         <p className="flex items-center mb-1">

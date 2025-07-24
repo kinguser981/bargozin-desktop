@@ -78,7 +78,7 @@ export default function TestResultItem(props: {
     <div
       className={`${
         props.status ? "bg-[#142A20]" : "bg-[#301B1F]"
-      } h-[70px] rounded-lg mb-2 flex justify-between items-center px-1 dir-en`}
+      } h-[70px] rounded-lg mb-2 flex justify-between items-center px-4 dir-en`}
     >
       <div className="flex flex-col">
         <p className="flex items-center mb-1">
