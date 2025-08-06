@@ -331,9 +331,9 @@ export default function DomainTest() {
                   />
                 ))}
                 {unusableResults.length === 0 && isCompleted && (
-                  <div className="flex items-center justify-center h-full text-gray-400">
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
                     <CheckIcon />
-                    <p className="text-[#3FB950]">
+                    <p className="text-[#3FB950] mt-4">
                       همه DNS های بررسی‌شده در دسترس هستند
                     </p>
                   </div>
