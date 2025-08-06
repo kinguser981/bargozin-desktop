@@ -18,6 +18,7 @@ interface DownloadSpeedResult {
   test_duration_seconds: number;
   error_message?: string;
   resolution_time_ms?: number;
+  session_id: number;
 }
 
 export default function Download() {
@@ -30,10 +31,9 @@ export default function Download() {
   const [downloadTime, setDownloadTime] = useState(10);
   const [downloadUrl, setDownloadUrl] = useState("");
 
-  // Refs for scrolling and session management
+  // Refs for scrolling
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const leftColumnRef = useRef<HTMLDivElement>(null);
-  const currentSessionRef = useRef<number>(0);
 
   // Event listeners for real-time updates
   useEffect(() => {
@@ -93,8 +93,11 @@ export default function Download() {
   // Cleanup effect - Cancel ongoing tests when component unmounts
   useEffect(() => {
     return () => {
+      console.log("Component unmounting, cancelling download tests");
       // Cancel any ongoing download tests when user navigates away
-      invoke("cancel_download_tests").catch((error) => {
+      invoke("cancel_download_tests").then(() => {
+        console.log("Download tests cancelled successfully");
+      }).catch((error) => {
         console.log("Failed to cancel download tests:", error);
       });
     };
@@ -102,40 +105,13 @@ export default function Download() {
 
   // Reset state when component mounts to ensure clean start
   useEffect(() => {
-    let isInitializing = false;
-
-    const initializeSession = async () => {
-      if (isInitializing) {
-        console.log("Already initializing, skipping...");
-        return;
-      }
-
-      isInitializing = true;
-      console.log("Starting download test initialization...");
-
-      // Clear any existing state from previous sessions
-      setIsLoading(false);
-      setIsCompleted(false);
-      setUsableResults([]);
-      setTotalResults(0);
-
-      // Get current session ID WITHOUT cancelling
-      console.log("Getting current session ID...");
-      const sessionId = await invoke<number>("get_current_session").catch(
-        (error) => {
-          console.log("Failed to get current session:", error);
-          return 0;
-        }
-      );
-
-      currentSessionRef.current = sessionId;
-      console.log("Initialized download test with session:", sessionId);
-      console.log("Session stored in ref:", currentSessionRef.current);
-
-      isInitializing = false;
-    };
-
-    initializeSession();
+    console.log("Initializing download test component");
+    
+    // Clear any existing state from previous sessions
+    setIsLoading(false);
+    setIsCompleted(false);
+    setUsableResults([]);
+    setTotalResults(0);
   }, []);
 
   // Handler functions
@@ -162,16 +138,14 @@ export default function Download() {
     setTotalResults(0);
 
     try {
+      console.log("About to start download test...");
       // Start download speed tests
-      console.log("Invoking test_download_speed_all_dns command");
-      console.log("Current session ref:", currentSessionRef.current);
-
       await invoke("test_download_speed_all_dns", {
         url: downloadUrl.trim(),
         timeoutSeconds: downloadTime,
       });
-
-      console.log("Successfully invoked download speed test command");
+      
+      console.log("Download test started successfully");
     } catch (error) {
       console.error("Download test failed:", error);
       alert(`خطا در تست سرعت دانلود: ${error}`);

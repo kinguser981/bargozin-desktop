@@ -117,6 +117,7 @@ pub struct DownloadSpeedResult {
     pub test_duration_seconds: f64,
     pub error_message: Option<String>,
     pub resolution_time_ms: Option<u64>,
+    pub session_id: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -317,7 +318,7 @@ pub async fn test_url_with_all_dns_servers(url: String) -> Result<BulkTestResult
 }
 
 // Original functions (keeping existing functionality)
-pub async fn test_single_dns_server(domain: String, dns_server: String, session_id: u64) -> DnsTestResult {
+pub async fn test_single_dns_server(domain: String, dns_server: String, _session_id: u64) -> DnsTestResult {
     let start_time = std::time::Instant::now();
     
     // Ensure HTTPS URL like in CLI code
@@ -330,7 +331,7 @@ pub async fn test_single_dns_server(domain: String, dns_server: String, session_
                 status: false,
                 response_time: Some(start_time.elapsed().as_millis() as u64),
                 error_message: Some("Invalid domain format".to_string()),
-                session_id,
+                session_id: 0,
                 http_status: HttpStatus::Failed("Invalid domain".to_string()),
                 test_url: Some(url_string),
             };
@@ -360,7 +361,7 @@ pub async fn test_single_dns_server(domain: String, dns_server: String, session_
                 } else { 
                     Some(format!("HTTP {} - {}", status_code, status_msg)) 
                 },
-                session_id,
+                session_id: 0,
                 http_status,
                 test_url: Some(url_string),
             }
@@ -372,7 +373,7 @@ pub async fn test_single_dns_server(domain: String, dns_server: String, session_
                 status: false,
                 response_time: Some(response_time),
                 error_message: Some("DNS resolution or HTTP request failed".to_string()),
-                session_id,
+                session_id: 0,
                 http_status: HttpStatus::Failed("Connection failed".to_string()),
                 test_url: Some(url_string),
             }
@@ -660,7 +661,7 @@ async fn resolve_host_with_dns(host: &str, dns_server: &str) -> anyhow::Result<I
         .ok_or_else(|| anyhow::anyhow!("No IP found for host"))
 }
 
-async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64) -> anyhow::Result<DownloadSpeedResult> {
+async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64, _session_id: u64) -> anyhow::Result<DownloadSpeedResult> {
     println!("Starting download test: {} with DNS: {}", url, dns_ip);
     
     // Start the overall timer from the beginning (includes DNS resolution + connection + download)
@@ -750,15 +751,19 @@ async fn download_with_custom_dns(url: &str, dns_ip: &str, timeout_seconds: u64)
         test_duration_seconds: elapsed,
         error_message: None,
         resolution_time_ms: Some(resolution_time_ms),
+        session_id: 0, // This will be set by the calling function
     })
 }
 
-pub async fn test_download_speed_with_dns(url: String, dns_server: String, timeout_seconds: u64) -> DownloadSpeedResult {
+pub async fn test_download_speed_with_dns(url: String, dns_server: String, timeout_seconds: u64, session_id: u64) -> DownloadSpeedResult {
     // Add a small delay to allow for cancellation check
     tokio::time::sleep(std::time::Duration::from_millis(10)).await;
     
-    match download_with_custom_dns(&url, &dns_server, timeout_seconds).await {
-        Ok(result) => result,
+    match download_with_custom_dns(&url, &dns_server, timeout_seconds, session_id).await {
+        Ok(mut result) => {
+            result.session_id = session_id;
+            result
+        },
         Err(e) => DownloadSpeedResult {
             dns_server,
             url,
@@ -768,6 +773,7 @@ pub async fn test_download_speed_with_dns(url: String, dns_server: String, timeo
             test_duration_seconds: 0.0,
             error_message: Some(e.to_string()),
             resolution_time_ms: None,
+            session_id,
         },
     }
 }
