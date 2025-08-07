@@ -1,65 +1,76 @@
-use tauri::{Emitter, AppHandle};
-use crate::dns::{DNS_SERVERS, test_single_dns_server, test_url_with_dns, UrlTestResult, test_url_with_all_dns_servers, BulkTestResult, test_download_speed_with_dns, DownloadSpeedResult};
-use crate::docker::{test_docker_registry_download_speed, validate_docker_image_name, docker_config_path, read_docker_registries_file, download_docker_config_file, DOCKER_CONFIG_URL};
-use std::sync::{Arc, Mutex};
+use crate::dns::{test_download_speed_with_dns, test_single_dns_server, DNS_SERVERS};
+use crate::docker::{
+    docker_config_path, download_docker_config_file, read_docker_registries_file,
+    test_docker_registry_download_speed, validate_docker_image_name, DOCKER_CONFIG_URL,
+};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use tauri::{AppHandle, Emitter};
 use tokio::task::JoinHandle;
 
-// Global storage for active tasks
+async fn spawn_with_cleanup<F, Fut>(
+    task_key: String,
+    task_fn: F,
+) -> JoinHandle<()>
+where
+    F: FnOnce() -> Fut + Send + 'static,
+    Fut: std::future::Future<Output = ()> + Send + 'static,
+{
+    let task_key_for_cleanup = task_key.clone();
+    let task_key_for_log = task_key.clone();
+    
+    let handle = tokio::spawn(async move {
+        task_fn().await;
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        active_tasks.remove(&task_key_for_cleanup);
+        println!("Cleaned up completed task: {}", task_key_for_cleanup);
+    });
+    
+    {
+        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+        active_tasks.insert(task_key, vec![handle]);
+        println!("Added task to active_tasks: {}", task_key_for_log);
+    }
+    
+    tokio::spawn(async move {
+        std::future::pending::<()>().await;
+    })
+}
+
 lazy_static::lazy_static! {
     static ref ACTIVE_TASKS: Arc<Mutex<HashMap<String, Vec<JoinHandle<()>>>>> = Arc::new(Mutex::new(HashMap::new()));
 }
 
 #[tauri::command]
 pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(), String> {
-    let domain = domain.trim().to_string();
-    
-    if domain.is_empty() {
-        return Err("Please enter a valid domain name".to_string());
-    }
+    println!("Testing DNS servers for domain: {}", domain);
 
-    // Cancel any existing tests
     {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        if let Some(handles) = active_tasks.remove(&domain) {
-            for handle in handles {
-                handle.abort();
-            }
+        let result = abort_all_tasks().await;
+        if let Err(e) = result {
+            eprintln!("Failed to abort all tasks: {}", e);
         }
     }
 
-    let mut handles = Vec::new();
+    let domain = domain.trim().to_string();
+
+    if domain.is_empty() {
+        return Err("Please enter a valid domain name".to_string());
+    }
 
     for &dns_server in DNS_SERVERS {
         let domain_clone = domain.clone();
         let dns_server_string = dns_server.to_string();
         let app_handle_clone = app_handle.clone();
-        
-        let handle = tokio::spawn(async move {
+        let task_key = domain.clone() + "-" + dns_server;
+
+        spawn_with_cleanup(task_key.clone(), move || async move {
             let result = test_single_dns_server(domain_clone, dns_server_string, 0).await;
-            
+
             if let Err(e) = app_handle_clone.emit("dns-test-result", &result) {
                 eprintln!("Failed to emit DNS test result: {}", e);
             }
-        });
-        
-        handles.push(handle);
-    }
-
-    // Store handles for potential cancellation
-    {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.insert(domain.clone(), handles);
-    }
-
-    // Wait for all tasks to complete by removing them from storage
-    let stored_handles = {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.remove(&domain).unwrap_or_default()
-    };
-
-    for handle in stored_handles {
-        let _ = handle.await;
+        }).await;
     }
 
     if let Err(e) = app_handle.emit("dns-test-complete", ()) {
@@ -69,146 +80,55 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
 }
 
 #[tauri::command]
-pub async fn cancel_dns_tests() -> Result<(), String> {
-    let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-    
-    for (domain, handles) in active_tasks.drain() {
-        println!("Cancelling DNS tests for domain: {}", domain);
-        for handle in handles {
-            handle.abort();
-        }
-    }
-    
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn cancel_download_tests() -> Result<(), String> {
-    println!("Cancelling all download tests...");
-    let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-    
-    let mut cancelled_count = 0;
-    for (identifier, handles) in active_tasks.drain() {
-        println!("Cancelling download tests for: {}", identifier);
-        for handle in handles {
-            handle.abort();
-            cancelled_count += 1;
-        }
-    }
-    
-    println!("Cancelled {} download test tasks", cancelled_count);
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn test_url_with_dns_server(url: String, dns_server: String) -> Result<UrlTestResult, String> {
-    let url = url.trim();
-    let dns_server = dns_server.trim();
-    
-    if url.is_empty() {
-        return Err("Please enter a valid URL".to_string());
-    }
-    
-    if dns_server.is_empty() {
-        return Err("Please enter a valid DNS server".to_string());
-    }
-    
-    // Validate URL format
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err("URL must start with http:// or https://".to_string());
-    }
-    
-    // Call the DNS testing function
-    let result = test_url_with_dns(url.to_string(), dns_server.to_string()).await;
-    Ok(result)
-}
-
-#[tauri::command]
-pub async fn bulk_test_url_with_all_dns_servers(url: String) -> Result<BulkTestResult, String> {
-    let url = url.trim();
-    
-    if url.is_empty() {
-        return Err("Please enter a valid URL".to_string());
-    }
-    
-    // Validate URL format
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err("URL must start with http:// or https://".to_string());
-    }
-    
-    // Call the bulk testing function
-    match test_url_with_all_dns_servers(url.to_string()).await {
-        Ok(result) => Ok(result),
-        Err(e) => Err(format!("Bulk test failed: {}", e)),
-    }
-}
-
-#[tauri::command]
-pub async fn test_download_speed_single_dns(url: String, dns_server: String, timeout_seconds: u64) -> Result<DownloadSpeedResult, String> {
-    let url = url.trim();
-    let dns_server = dns_server.trim();
-    
-    if url.is_empty() {
-        return Err("Please enter a valid URL".to_string());
-    }
-    
-    if dns_server.is_empty() {
-        return Err("Please enter a valid DNS server".to_string());
-    }
-    
-    // Validate URL format
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err("URL must start with http:// or https://".to_string());
-    }
-    
-    // Call the download speed testing function
-    let result = test_download_speed_with_dns(url.to_string(), dns_server.to_string(), timeout_seconds, 0).await;
-    Ok(result)
-}
-
-#[tauri::command]
-pub async fn test_download_speed_all_dns(url: String, timeout_seconds: u64, app_handle: AppHandle) -> Result<(), String> {
-    let url = url.trim().to_string();
-    
-    if url.is_empty() {
-        return Err("Please enter a valid URL".to_string());
-    }
-    
-    // Validate URL format
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err("URL must start with http:// or https://".to_string());
-    }
-
-    // Cancel any existing tests first
+pub async fn test_download_speed_all_dns(
+    url: String,
+    timeout_seconds: u64,
+    app_handle: AppHandle,
+) -> Result<(), String> {
     {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        if let Some(handles) = active_tasks.remove(&url) {
-            for handle in handles {
-                handle.abort();
-            }
+        let result = abort_all_tasks().await;
+        if let Err(e) = result {
+            eprintln!("Failed to abort all tasks: {}", e);
         }
     }
 
-    // Clone URL for task storage
+    let url = url.trim().to_string();
+
+    if url.is_empty() {
+        return Err("Please enter a valid URL".to_string());
+    }
+
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("URL must start with http:// or https://".to_string());
+    }
+
     let url_for_storage = url.clone();
-    
-    // Create the main testing task
-    let main_task = tokio::spawn(async move {
+
+    spawn_with_cleanup(url_for_storage.clone(), move || async move {
         println!("Starting download tests for URL: {}", url);
-        
-        // Test DNS servers sequentially
+
         for (index, &dns_server) in DNS_SERVERS.iter().enumerate() {
-            println!("Testing DNS server {} ({}/{}): {}", dns_server, index + 1, DNS_SERVERS.len(), dns_server);
-            
+            println!(
+                "Testing DNS server {} ({}/{}): {}",
+                dns_server,
+                index + 1,
+                DNS_SERVERS.len(),
+                dns_server
+            );
+
             let url_clone = url.clone();
             let dns_server_string = dns_server.to_string();
             let app_handle_clone = app_handle.clone();
-            
-            let result = test_download_speed_with_dns(url_clone, dns_server_string, timeout_seconds, 0).await;
-            
-            println!("Download test result for {}: success={}, speed={:.3} Mbps", 
-                     result.dns_server, result.success, result.download_speed_mbps);
-            
+
+            let result =
+                test_download_speed_with_dns(url_clone, dns_server_string, timeout_seconds, 0)
+                    .await;
+
+            println!(
+                "Download test result for {}: success={}, speed={:.3} Mbps",
+                result.dns_server, result.success, result.download_speed_mbps
+            );
+
             if let Err(e) = app_handle_clone.emit("download-test-result", &result) {
                 eprintln!("Failed to emit download test result: {}", e);
             } else {
@@ -222,30 +142,23 @@ pub async fn test_download_speed_all_dns(url: String, timeout_seconds: u64, app_
         } else {
             println!("Successfully emitted completion event");
         }
-    });
+    }).await;
 
-    // Store the main task for potential cancellation
-    {
-        let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
-        active_tasks.insert(url_for_storage, vec![main_task]);
-    }
-
-    // Return immediately - don't wait for the task to complete
-    // This allows the task to be cancelled when the user navigates away
     Ok(())
 }
 
-// Docker Registry Testing Commands - SIMPLIFIED
-
 #[tauri::command]
-pub async fn test_docker_registries(image_name: String, timeout_seconds: u64, app_handle: AppHandle) -> Result<(), String> {
+pub async fn test_docker_registries(
+    image_name: String,
+    timeout_seconds: u64,
+    app_handle: AppHandle,
+) -> Result<(), String> {
     let image_name = image_name.trim().to_string();
-    
+
     if image_name.is_empty() {
         return Err("Please enter a valid Docker image name".to_string());
     }
 
-    // Validate image name
     if !validate_docker_image_name(&image_name) {
         return Err("Invalid Docker image name format".to_string());
     }
@@ -258,7 +171,8 @@ pub async fn test_docker_registries(image_name: String, timeout_seconds: u64, ap
         Ok(list) => list,
         Err(_) => {
             // Download config file if it doesn't exist
-            if let Err(e) = download_docker_config_file(DOCKER_CONFIG_URL, &docker_file_path).await {
+            if let Err(e) = download_docker_config_file(DOCKER_CONFIG_URL, &docker_file_path).await
+            {
                 return Err(format!("Failed to download Docker registry config: {}", e));
             }
             match read_docker_registries_file(&docker_file_path).await {
@@ -270,46 +184,100 @@ pub async fn test_docker_registries(image_name: String, timeout_seconds: u64, ap
         }
     };
 
-    println!("Testing {} registries sequentially with {}s timeout", registries.len(), timeout_seconds);
+    println!(
+        "Testing {} registries sequentially with {}s timeout",
+        registries.len(),
+        timeout_seconds
+    );
 
-    // Test registries one by one
-    for (index, registry) in registries.iter().enumerate() {
-        println!("Testing registry {}/{}: {}", index + 1, registries.len(), registry);
-        
-        let mut result = test_docker_registry_download_speed(registry, &image_name, timeout_seconds).await;
-        
-        // Set the session ID to 0
-        result.session_id = 0;
-        
-        println!("Registry {} test completed: success={}, speed={:.2} Mbps", 
-                 registry, result.success, result.download_speed_mbps);
-        
-        // Emit result immediately
-        if let Err(e) = app_handle.emit("docker-registry-test-result", &result) {
-            eprintln!("Failed to emit Docker registry test result: {}", e);
-        } else {
-            println!("Successfully emitted result for {}", registry);
+    let image_name_for_task = image_name.clone();
+    spawn_with_cleanup(image_name.clone(), move || async move {
+        for (index, registry) in registries.iter().enumerate() {
+            println!(
+                "Testing registry {}/{}: {}",
+                index + 1,
+                registries.len(),
+                registry
+            );
+
+            let mut result = test_docker_registry_download_speed(
+                registry,
+                &image_name_for_task,
+                timeout_seconds,
+            )
+            .await;
+
+            // Set the session ID to 0
+            result.session_id = 0;
+
+            println!(
+                "Registry {} test completed: success={}, speed={:.2} Mbps",
+                registry, result.success, result.download_speed_mbps
+            );
+
+            // Emit result immediately
+            if let Err(e) = app_handle.emit("docker-registry-test-result", &result) {
+                eprintln!("Failed to emit Docker registry test result: {}", e);
+            } else {
+                println!("Successfully emitted result for {}", registry);
+            }
         }
-    }
 
-    // All tests completed
-    println!("All Docker registry tests completed");
-    if let Err(e) = app_handle.emit("docker-registry-test-complete", ()) {
-        eprintln!("Failed to emit Docker registry test completion event: {}", e);
-    } else {
-        println!("Successfully emitted completion event");
-    }
+        // All tests completed
+        println!("All Docker registry tests completed");
+        if let Err(e) = app_handle.emit("docker-registry-test-complete", ()) {
+            eprintln!(
+                "Failed to emit Docker registry test completion event: {}",
+                e
+            );
+        } else {
+            println!("Successfully emitted completion event");
+        }
+    }).await;
 
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn cancel_docker_registry_tests() -> Result<(), String> {
-    println!("Docker registry test cancellation not needed with simplified approach");
     Ok(())
 }
 
 #[tauri::command]
 pub async fn validate_docker_image(image_name: String) -> Result<bool, String> {
     Ok(validate_docker_image_name(&image_name))
+}
+
+#[tauri::command]
+pub async fn has_active_tasks() -> bool {
+    let active_tasks = ACTIVE_TASKS.lock().unwrap();
+    !active_tasks.is_empty()
+}
+
+#[tauri::command]
+pub async fn get_active_task_count() -> usize {
+    let active_tasks = ACTIVE_TASKS.lock().unwrap();
+    active_tasks.len()
+}
+
+#[tauri::command]
+pub async fn abort_all_tasks() -> Result<(), String> {
+    let mut active_tasks = ACTIVE_TASKS.lock().unwrap();
+    println!("Aborting All Tasks, total tasks: {}", active_tasks.len());
+
+    // Collect all keys to remove after aborting
+    let keys_to_remove: Vec<String> = active_tasks.keys().cloned().collect();
+    println!("Keys to abort: {:?}", keys_to_remove);
+
+    for key in &keys_to_remove {
+        if let Some(handles) = active_tasks.get(key) {
+            println!("Aborting Task {} with {} handles", key, handles.len());
+            for (i, handle) in handles.iter().enumerate() {
+                handle.abort();
+                println!("Aborted handle {} for task {}", i, key);
+            }
+            println!("Aborted Task {}", key);
+        }
+    }
+
+    // Clear all tasks from storage
+    active_tasks.clear();
+    println!("Cleared {} tasks from storage", keys_to_remove.len());
+
+    Ok(())
 }

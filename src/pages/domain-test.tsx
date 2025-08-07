@@ -42,11 +42,9 @@ export default function DomainTest() {
   };
 
   useEffect(() => {
-    // Listen for individual DNS test results
     const unlisten = listen<DnsTestResult>("dns-test-result", (event) => {
       const result = event.payload;
 
-      // Ignore results from old sessions using ref for current value
       if (result.session_id !== currentSessionRef.current) {
         console.log(
           `Ignoring result from old session ${result.session_id}, current session: ${currentSessionRef.current}`
@@ -56,60 +54,34 @@ export default function DomainTest() {
 
       if (result.status) {
         setUsableResults((prev) => [...prev, result]);
-        // Auto-scroll right column when new usable result arrives
         setTimeout(() => scrollToBottom(rightColumnRef), 100);
       } else {
         setUnusableResults((prev) => [...prev, result]);
-        // Auto-scroll left column when new unusable result arrives
         setTimeout(() => scrollToBottom(leftColumnRef), 100);
       }
     });
 
-    // Listen for completion event
     const unlistenComplete = listen("dns-test-complete", () => {
       setIsLoading(false);
       setIsCompleted(true);
     });
 
-    // Cleanup listeners on component unmount
     return () => {
       unlisten.then((fn) => fn());
       unlistenComplete.then((fn) => fn());
     };
   }, []);
 
-  // Cleanup effect - Cancel ongoing tests when component unmounts
-  useEffect(() => {
-    return () => {
-      // Cancel any ongoing DNS tests when user navigates away
-      invoke("cancel_dns_tests").catch((error) => {
-        console.log("Failed to cancel DNS tests:", error);
-      });
-    };
-  }, []);
-
-  // Reset state when component mounts to ensure clean start
   useEffect(() => {
     const initializeSession = async () => {
-      // Clear any existing state from previous sessions
       setIsLoading(false);
       setIsCompleted(false);
       setUsableResults([]);
       setUnusableResults([]);
-
-      // Get current session ID WITHOUT cancelling
-      const sessionId = await invoke<number>("get_current_session").catch(
-        (error) => {
-          console.log("Failed to get current session:", error);
-          return 0;
-        }
-      );
-
-      currentSessionRef.current = sessionId;
-      console.log("Initialized DNS with session:", sessionId);
     };
 
     initializeSession();
+    invoke("abort_all_tasks");
   }, []);
 
   const handleDnsTest = async () => {
@@ -147,15 +119,9 @@ export default function DomainTest() {
     setUnusableResults([]);
 
     try {
-      // Start DNS tests (this will generate a new session ID in backend)
       await invoke("test_dns_servers", {
         domain: domain.trim(),
       });
-
-      // Get the new session ID that was created for this test
-      const newSessionId = await invoke<number>("get_current_session");
-      currentSessionRef.current = newSessionId;
-      console.log("Started DNS test with session:", newSessionId);
     } catch (error) {
       console.error("DNS test error:", error);
       showError("خطا در انجام تست DNS: " + error);
@@ -199,10 +165,11 @@ export default function DomainTest() {
           {(totalResults > 0 || isLoading) && (
             <div className="absolute inset-0 rounded-md overflow-hidden">
               <div
-                className={`h-full bg-green-500/25 transition-all duration-300 ${totalResults > 0 && totalResults < totalExpected
+                className={`h-full bg-green-500/25 transition-all duration-300 ${
+                  totalResults > 0 && totalResults < totalExpected
                     ? "pulse-effect"
                     : ""
-                  }`}
+                }`}
                 style={{
                   width: `${(totalResults / totalExpected) * 100}%`,
                 }}

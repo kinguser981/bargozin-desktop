@@ -22,24 +22,20 @@ interface DownloadSpeedResult {
 }
 
 export default function Download() {
-  // State variables
   const [isLoading, setIsLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
-  const [totalExpected] = useState(26); // Number of DNS servers
+  const [totalExpected] = useState(26);
   const [isCompleted, setIsCompleted] = useState(false);
   const [usableResults, setUsableResults] = useState<DownloadSpeedResult[]>([]);
   const [downloadTime, setDownloadTime] = useState(10);
   const [downloadUrl, setDownloadUrl] = useState("");
 
-  // Refs for scrolling
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const leftColumnRef = useRef<HTMLDivElement>(null);
 
-  // Event listeners for real-time updates
   useEffect(() => {
     console.log("Setting up download test event listeners");
 
-    // Listen for individual download test results
     const unlisten = listen<DownloadSpeedResult>(
       "download-test-result",
       (event) => {
@@ -53,7 +49,6 @@ export default function Download() {
             result.download_speed_mbps
           );
           setUsableResults((prev) => [...prev, result]);
-          // Auto-scroll right column when new usable result arrives
           setTimeout(() => scrollToBottom(rightColumnRef), 100);
         } else {
           console.log(
@@ -62,11 +57,9 @@ export default function Download() {
             result.error_message
           );
           setUsableResults((prev) => [...prev, result]);
-          // Auto-scroll left column when new unusable result arrives
           setTimeout(() => scrollToBottom(leftColumnRef), 100);
         }
 
-        // Update total results count
         setTotalResults((prev) => {
           const newCount = prev + 1;
           console.log("Total results count:", newCount);
@@ -75,14 +68,12 @@ export default function Download() {
       }
     );
 
-    // Listen for completion event
     const unlistenComplete = listen("download-test-complete", () => {
       console.log("Download tests completed");
       setIsLoading(false);
       setIsCompleted(true);
     });
 
-    // Cleanup listeners on component unmount
     return () => {
       console.log("Cleaning up download test event listeners");
       unlisten.then((fn) => fn());
@@ -90,28 +81,15 @@ export default function Download() {
     };
   }, []);
 
-  // Cleanup effect - Cancel ongoing tests when component unmounts
-  useEffect(() => {
-    return () => {
-      console.log("Component unmounting, cancelling download tests");
-      // Cancel any ongoing download tests when user navigates away
-      invoke("cancel_download_tests").then(() => {
-        console.log("Download tests cancelled successfully");
-      }).catch((error) => {
-        console.log("Failed to cancel download tests:", error);
-      });
-    };
-  }, []);
-
-  // Reset state when component mounts to ensure clean start
   useEffect(() => {
     console.log("Initializing download test component");
-    
-    // Clear any existing state from previous sessions
+
     setIsLoading(false);
     setIsCompleted(false);
     setUsableResults([]);
     setTotalResults(0);
+
+    invoke("abort_all_tasks");
   }, []);
 
   // Handler functions
@@ -144,7 +122,7 @@ export default function Download() {
         url: downloadUrl.trim(),
         timeoutSeconds: downloadTime,
       });
-      
+
       console.log("Download test started successfully");
     } catch (error) {
       console.error("Download test failed:", error);
