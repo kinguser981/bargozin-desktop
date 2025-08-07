@@ -58,10 +58,13 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
         return Err("Please enter a valid domain name".to_string());
     }
 
+    let results_count = Arc::new(Mutex::new(1));
+
     for &dns_server in DNS_SERVERS {
         let domain_clone = domain.clone();
         let dns_server_string = dns_server.to_string();
         let app_handle_clone = app_handle.clone();
+        let results_count_clone = Arc::clone(&results_count);
         let task_key = domain.clone() + "-" + dns_server;
 
         spawn_with_cleanup(task_key.clone(), move || async move {
@@ -70,12 +73,17 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
             if let Err(e) = app_handle_clone.emit("dns-test-result", &result) {
                 eprintln!("Failed to emit DNS test result: {}", e);
             }
+            let mut result_count = results_count_clone.lock().unwrap();
+            *result_count += 1;
+
+            if *result_count == DNS_SERVERS.len() {
+                if let Err(e) = app_handle_clone.emit("dns-test-complete", ()) {
+                    eprintln!("Failed to emit completion event: {}", e);
+                }
+            }
         }).await;
     }
-
-    if let Err(e) = app_handle.emit("dns-test-complete", ()) {
-        eprintln!("Failed to emit completion event: {}", e);
-    }
+    
     Ok(())
 }
 
