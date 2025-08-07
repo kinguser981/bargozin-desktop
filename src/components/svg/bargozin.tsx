@@ -7,10 +7,10 @@ export default function Bargozin() {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <circle cx="9" cy="9" r="8" stroke="#2F81F7" stroke-width="1.5" />
-      <circle cx="29.0001" cy="9" r="8" stroke="#2F81F7" stroke-width="1.5" />
-      <circle cx="48.9999" cy="9" r="8" stroke="#2F81F7" stroke-width="1.5" />
-      <circle cx="9" cy="28.9999" r="8" stroke="#2F81F7" stroke-width="1.5" />
+      <circle cx="9" cy="9" r="8" stroke="#2F81F7" strokeWidth="1.5" />
+      <circle cx="29.0001" cy="9" r="8" stroke="#2F81F7" strokeWidth="1.5" />
+      <circle cx="48.9999" cy="9" r="8" stroke="#2F81F7" strokeWidth="1.5" />
+      <circle cx="9" cy="28.9999" r="8" stroke="#2F81F7" strokeWidth="1.5" />
       <circle
         cx="29.0001"
         cy="28.9999"
@@ -22,11 +22,11 @@ export default function Bargozin() {
         cy="28.9999"
         r="8"
         stroke="#2F81F7"
-        stroke-width="1.5"
+        strokeWidth="1.5"
       />
-      <circle cx="9" cy="49" r="8" stroke="#2F81F7" stroke-width="1.5" />
-      <circle cx="29.0001" cy="49" r="8" stroke="#2F81F7" stroke-width="1.5" />
-      <circle cx="48.9999" cy="49" r="8" stroke="#2F81F7" stroke-width="1.5" />
+      <circle cx="9" cy="49" r="8" stroke="#2F81F7" strokeWidth="1.5" />
+      <circle cx="29.0001" cy="49" r="8" stroke="#2F81F7" strokeWidth="1.5" />
+      <circle cx="48.9999" cy="49" r="8" stroke="#2F81F7" strokeWidth="1.5" />
       <defs>
         <linearGradient
           id="paint0_linear_298_1422"
@@ -36,8 +36,8 @@ export default function Bargozin() {
           y2="28.9999"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#2F81F7" />
-          <stop offset="1" stop-color="#1C4C91" />
+          <stop stopColor="#2F81F7" />
+          <stop offset="1" stopColor="#1C4C91" />
         </linearGradient>
       </defs>
     </svg>
