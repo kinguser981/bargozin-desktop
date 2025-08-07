@@ -11,7 +11,7 @@ use tokio::task::JoinHandle;
 async fn spawn_with_cleanup<F, Fut>(
     task_key: String,
     task_fn: F,
-) -> JoinHandle<()>
+)
 where
     F: FnOnce() -> Fut + Send + 'static,
     Fut: std::future::Future<Output = ()> + Send + 'static,
@@ -31,10 +31,6 @@ where
         active_tasks.insert(task_key, vec![handle]);
         println!("Added task to active_tasks: {}", task_key_for_log);
     }
-    
-    tokio::spawn(async move {
-        std::future::pending::<()>().await;
-    })
 }
 
 lazy_static::lazy_static! {
@@ -83,7 +79,6 @@ pub async fn test_dns_servers(domain: String, app_handle: AppHandle) -> Result<(
             }
         }).await;
     }
-    
     Ok(())
 }
 
