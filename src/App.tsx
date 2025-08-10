@@ -13,7 +13,9 @@ function App() {
     <AlertProvider>
       <div>
         <Layout>
-          <Toaster />
+          <Toaster toastOptions={{
+            className: 'toast-item',
+          }} />
           <Routes>
             <Route path="/" element={<DomainTest />} />
             <Route path="/about" element={<About />} />

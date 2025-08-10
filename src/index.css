@@ -68,14 +68,23 @@
   --color-bg: #0d1117;
 }
 
-/* Apply Vazirmatn font globally and ensure text-white works */
-html,
-body {
-  font-family: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
-  color: inherit;
-  background-color: inherit;
+@theme {
+  --font-vazir: "Vazirmatn";
 }
 
+@layer base {
+  * {
+    @apply font-vazir;
+  }
+
+  html,
+  body {
+    color: inherit;
+    background-color: inherit;
+  }
+}
+
+/* Apply Vazirmatn font globally and ensure text-white works */
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -255,4 +264,9 @@ body {
 
 .people-item-text:hover path {
   stroke: #155dfc !important;
+}
+
+/* sonner */
+.toast-item {
+  gap: 12px !important;
 }
