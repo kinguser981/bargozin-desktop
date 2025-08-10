@@ -261,7 +261,7 @@ export default function Download() {
         </div>
 
         <div className="flex items-end gap-2 dir-fa">
-          <div className="w-[132px] h-[60px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
+          <div className="w-[122px] h-[43px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
             <button
               onClick={() => setDownloadTime(downloadTime + 1)}
               className="h-full w-full flex items-center justify-center hover:bg-[#262a30] rounded-r-xl p-1 select-none cursor-pointer"
@@ -270,7 +270,7 @@ export default function Download() {
             </button>
             <input
               type="text"
-              className={`h-full w-full flex items-center justify-center text-center ${downloadTime <= 5 || downloadTime > 10 ? "text-[#F5C518]" : ""
+              className={`h-full w-full flex items-center justify-center text-center pt-[0.2rem] ${downloadTime <= 5 || downloadTime > 10 ? "text-[#F5C518]" : ""
                 }`}
               value={downloadTime}
               onChange={(e) => setDownloadTime(Number(e.target.value) || 0)}
@@ -308,7 +308,7 @@ export default function Download() {
 
       {/* Results Section - Takes remaining space */}
       <div className="flex-1 flex flex-col min-h-0 mt-2">
-        <p className="text-right mb-2">نتایج تست</p>
+        <p className="text-right mb-3">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 dir-fa">

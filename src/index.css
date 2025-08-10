@@ -75,6 +75,8 @@
 @layer base {
   * {
     @apply font-vazir;
+    scrollbar-width: thin;
+    scrollbar-color: #30363d #161b22;
   }
 
   html,
@@ -86,7 +88,7 @@
 
 @layer components {
   .main-input {
-    @apply bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right focus:outline-none focus:border-[#8B9DC3] relative z-10;
+    @apply w-full pl-50 bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm text-right focus:outline-none focus:border-[#8B9DC3] relative z-10;
   }
 
   .submit-button {
@@ -261,11 +263,6 @@
 
 ::-webkit-scrollbar-corner {
   background: #0d1117;
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #30363d #161b22;
 }
 
 .people-item-text:hover {

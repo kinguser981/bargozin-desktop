@@ -40,36 +40,33 @@ export default function DownloadResultItem(props: {
     // Format as response time in ms/s
     return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`;
   };
-  
+
   return (
     <div
-      className={`${
-        props.isBest ? "bg-[#263B43] border-[#38727C] border" : props.responseTime == 0 ? "bg-[#301B1F]" : "bg-[#30363D]"
-      } h-[50px] w-full rounded-lg mb-2 flex justify-between items-center px-4 dir-en`}
+      className={`${props.isBest ? "bg-[#263B43] border-[#38727C] border" : props.responseTime == 0 ? "bg-[#301B1F]" : "bg-[#30363D]"
+        } min-h-[50px] w-full rounded-lg mb-2 flex justify-between items-center px-3 dir-en`}
     >
-      <div className="flex flex-col">
-        <p className="flex items-center mb-1">
+      <div className="w-9/15 flex flex-col gap-[5px]">
+        <p className="w-full flex justify-start items-center gap-1 mb-1">
           <button
-            className={`ml-2 p-1 rounded transition-all duration-200 hover:bg-white/10 ${
-              isCopied
-                ? "text-green-400 scale-110"
-                : "text-gray-400 hover:text-white cursor-pointer"
-            }`}
+            className={`rounded transition-all duration-200 hover:bg-white/10 size-6 flex items-center justify-center ${isCopied
+              ? "text-green-400 scale-110"
+              : "text-gray-400 hover:text-white cursor-pointer"
+              }`}
             onClick={handleCopy}
             disabled={isCopied}
           >
             {isCopied ? <CheckIcon /> : <Clipboard />}
           </button>
           <span
-            className={`transition-colors translate-y-[2.5px] text-left duration-200 ${
-              isCopied ? "text-green-400" : ""
-            }`}
+            className={`transition-colors translate-y-[2.5px] duration-200 text-md ${isCopied ? "text-green-400" : ""
+              }`}
           >
             {props.dns}
           </span>
         </p>
       </div>
-      <div className="flex flex-col items-end flex-shrink-0 min-w-0 max-w-[240px]">
+      <div className="w-6/15 flex flex-col items-end justify-center">
         <p className="flex items-center gap-2 mb-1 whitespace-nowrap">
           <p className="text-left ml-4 text-white text-sm mr-2 translate-y-[2px]">
             {formatResponseTime(props.responseTime)}
