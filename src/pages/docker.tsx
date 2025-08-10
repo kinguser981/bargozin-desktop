@@ -209,7 +209,7 @@ export default function Docker() {
 
           {/* Progress Text */}
           {(totalResults > 0 || isLoading) && (
-            <div className="absolute left-[200px] top-1/2 transform -translate-y-1/2 text-xs text-gray-400 z-20">
+            <div className="absolute left-[185px] top-1/2 transform -translate-y-1/2 text-xs text-gray-400 z-20">
               {isLoading && totalResults === 0
                 ? "در حال شروع تست..."
                 : `${totalResults} / ${totalExpected} ${isCompleted ? "تکمیل شد" : ""
@@ -258,7 +258,7 @@ export default function Docker() {
           </div>
 
           <div className="flex items-end gap-2 dir-fa">
-            <div className="w-[132px] h-[60px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
+            <div className="w-[122px] h-[43px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
               <button
                 onClick={() => setTimeoutSeconds(timeoutSeconds + 1)}
                 className="h-full w-full flex items-center justify-center hover:bg-[#262a30] rounded-r-xl p-1 select-none cursor-pointer"
@@ -267,7 +267,7 @@ export default function Docker() {
               </button>
               <input
                 type="text"
-                className="h-full w-full flex items-center justify-center text-center"
+                className="h-full w-full flex items-center justify-center text-center pt-[0.2rem]"
                 value={timeoutSeconds}
                 onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
               />

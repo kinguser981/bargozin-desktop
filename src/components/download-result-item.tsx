@@ -44,10 +44,10 @@ export default function DownloadResultItem(props: {
   return (
     <div
       className={`${props.isBest ? "bg-[#263B43] border-[#38727C] border" : props.responseTime == 0 ? "bg-[#301B1F]" : "bg-[#30363D]"
-        } min-h-[50px] w-full rounded-lg mb-2 flex justify-between items-center px-3 dir-en`}
+        } min-h-[50px] w-full rounded-lg mb-2 flex justify-between items-center px-3 dir-en py-2`}
     >
       <div className="w-9/15 flex flex-col gap-[5px]">
-        <p className="w-full flex justify-start items-center gap-1 mb-1">
+        <p className="w-full flex justify-start items-center gap-[8px] mb-1">
           <button
             className={`rounded transition-all duration-200 hover:bg-white/10 size-6 flex items-center justify-center ${isCopied
               ? "text-green-400 scale-110"
@@ -59,7 +59,7 @@ export default function DownloadResultItem(props: {
             {isCopied ? <CheckIcon /> : <Clipboard />}
           </button>
           <span
-            className={`transition-colors translate-y-[2.5px] duration-200 text-md ${isCopied ? "text-green-400" : ""
+            className={`transition-colors translate-y-[2.5px] duration-200 text-left text-[15px] ${isCopied ? "text-green-400" : ""
               }`}
           >
             {props.dns}
