@@ -143,7 +143,7 @@ export default function Docker() {
   const totalExpected = 9; // Total number of Docker registries
 
   return (
-    <div className="text-right h-full flex flex-col px-[35px]">
+    <div className="text-right h-full flex flex-col pr-[35px]">
       {/* Input Section - Fixed height */}
       <div className="flex-shrink-0">
         <p className="mb-4 flex justify-end items-center gap-2">
@@ -175,22 +175,20 @@ export default function Docker() {
           {(totalResults > 0 || isLoading) && (
             <div className="absolute inset-0 rounded-md overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${
-                  isLoading && totalResults === 0
-                    ? "bg-gradient-to-r from-blue-500/20 via-blue-500/30 to-blue-500/20 animate-pulse"
-                    : isLoading && totalResults < totalExpected
+                className={`h-full transition-all duration-500 ${isLoading && totalResults === 0
+                  ? "bg-gradient-to-r from-blue-500/20 via-blue-500/30 to-blue-500/20 animate-pulse"
+                  : isLoading && totalResults < totalExpected
                     ? "bg-green-500/25 animate-pulse"
                     : "bg-green-500/30"
-                }`}
+                  }`}
                 style={{
                   width:
                     isLoading && totalResults === 0
                       ? "100%"
-                      : `${
-                          totalExpected > 0
-                            ? (totalResults / totalExpected) * 100
-                            : 0
-                        }%`,
+                      : `${totalExpected > 0
+                        ? (totalResults / totalExpected) * 100
+                        : 0
+                      }%`,
                 }}
               ></div>
             </div>
@@ -201,7 +199,7 @@ export default function Docker() {
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleDockerRegistryTest()}
-            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
+            className="main-input dir-fa"
             placeholder="مثلا ubuntu:latest"
             disabled={isLoading}
             autoCorrect="off"
@@ -214,9 +212,8 @@ export default function Docker() {
             <div className="absolute left-[200px] top-1/2 transform -translate-y-1/2 text-xs text-gray-400 z-20">
               {isLoading && totalResults === 0
                 ? "در حال شروع تست..."
-                : `${totalResults} / ${totalExpected} ${
-                    isCompleted ? "تکمیل شد" : ""
-                  }`}
+                : `${totalResults} / ${totalExpected} ${isCompleted ? "تکمیل شد" : ""
+                }`}
             </div>
           )}
 
@@ -225,7 +222,7 @@ export default function Docker() {
             disabled={
               isLoading || (totalResults > 0 && totalResults < totalExpected)
             }
-            className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#38727C] text-white flex items-center gap-2 cursor-pointer hover:bg-[#96989A] hover:text-[#848484] disabled:opacity-50 disabled:cursor-not-allowed z-20"
+            className="submit-button group dir-fa"
           >
             <Search />
             {isLoading || (totalResults > 0 && totalResults < totalExpected)

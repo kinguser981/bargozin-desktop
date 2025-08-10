@@ -23,7 +23,7 @@ export default function TestResultItem(props: {
 
   const formatResponseTime = (time?: number) => {
     if (time === undefined) return "";
-    
+
     if (props.isDownloadSpeed) {
       // Format as download speed in MB/s or KB/s for slower speeds
       if (time === 0) return "0 KB/s";
@@ -35,7 +35,7 @@ export default function TestResultItem(props: {
       }
       return `${time.toFixed(2)} MB/s`;
     }
-    
+
     // Format as response time in ms/s
     return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`;
   };
@@ -76,38 +76,35 @@ export default function TestResultItem(props: {
 
   return (
     <div
-      className={`${
-        props.status ? "bg-[#142A20]" : "bg-[#301B1F]"
-      } h-[70px] rounded-lg mb-2 flex justify-between items-center px-4 dir-en`}
+      className={`${props.status ? "bg-[#142A20]" : "bg-[#301B1F]"
+        } min-h-[70px] rounded-lg mb-2 flex justify-between items-center py-3 px-4 dir-en gap-2`}
     >
-      <div className="flex flex-col">
-        <p className="flex items-center mb-1">
+      <div className="w-9/15 flex flex-col gap-[5px]">
+        <p className="w-full flex justify-start items-center gap-1 mb-1">
           <button
-            className={`ml-2 p-1 rounded transition-all duration-200 hover:bg-white/10 ${
-              isCopied 
-                ? "text-green-400 scale-110" 
-                : "text-gray-400 hover:text-white cursor-pointer"
-            }`}
+            className={`rounded transition-all duration-200 hover:bg-white/10 size-6 flex items-center justify-center ${isCopied
+              ? "text-green-400 scale-110"
+              : "text-gray-400 hover:text-white cursor-pointer"
+              }`}
             onClick={handleCopy}
             disabled={isCopied}
           >
             {isCopied ? <CheckIcon /> : <Clipboard />}
           </button>
-          <span className={`transition-colors translate-y-[2.5px] duration-200 ${isCopied ? "text-green-400" : ""}`}>
+          <span className={`transition-colors translate-y-[2.5px] duration-200 text-md ${isCopied ? "text-green-400" : ""}`}>
             {props.dns}
           </span>
         </p>
         {props.responseTime && (
-          <p className="text-xs text-gray-400 text-left ml-4">
-            {formatResponseTime(props.responseTime)} { props.errorMessage ? `- ${shortenErrorMessage(props.errorMessage)}` : "" }
+          <p className="pl-1 w-calc(100%-50px) text-xs text-gray-400 text-left">
+            {formatResponseTime(props.responseTime)} {props.errorMessage ? `- ${shortenErrorMessage(props.errorMessage)}` : ""}
           </p>
         )}
       </div>
-      <div className="flex flex-col items-end flex-shrink-0 min-w-0 max-w-[240px]">
+      <div className="w-6/15 flex flex-col items-end">
         <p
-          className={`${
-            props.status ? "text-[#3FB950]" : "text-[#F85149]"
-          } flex items-center gap-2 mb-1 whitespace-nowrap`}
+          className={`${props.status ? "text-[#3FB950]" : "text-[#F85149]"
+            } flex items-center gap-2 mb-1 whitespace-nowrap`}
         >
           {props.status ? "قابل استفاده" : "مسدود شده"}
           <StatusCircle status={props.status} />

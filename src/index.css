@@ -84,6 +84,16 @@
   }
 }
 
+@layer components {
+  .main-input {
+    @apply bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right focus:outline-none focus:border-[#8B9DC3] relative z-10;
+  }
+
+  .submit-button {
+    @apply h-[calc(100%-14px)] absolute left-2 top-[7px] text-[14px] p-2 px-5 transition rounded bg-[#38727C] !text-white flex items-center gap-2 cursor-pointer hover:bg-[#96989A] hover:text-[#848484] disabled:opacity-50 disabled:cursor-not-allowed z-20;
+  }
+}
+
 /* Apply Vazirmatn font globally and ensure text-white works */
 @keyframes spin {
   0% {
