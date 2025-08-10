@@ -1,11 +1,12 @@
 export default function Linkedin() {
   return (
     <svg
-      width="20"
-      height="20"
+      width="19"
+      height="19"
       viewBox="0 0 20 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className="-translate-y-[2px]"
     >
       <path
         d="M5.82683 8.11719H2.30737L2.30737 17.8935H5.82683L5.82683 8.11719Z"

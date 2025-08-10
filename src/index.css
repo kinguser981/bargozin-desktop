@@ -68,18 +68,40 @@
   --color-bg: #0d1117;
 }
 
-/* Apply Vazirmatn font globally and ensure text-white works */
-html,
-body {
-  font-family: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
-  color: inherit;
-  background-color: inherit;
+@theme {
+  --font-vazir: "Vazirmatn";
 }
 
+@layer base {
+  * {
+    @apply font-vazir;
+    scrollbar-width: thin;
+    scrollbar-color: #30363d #161b22;
+  }
+
+  html,
+  body {
+    color: inherit;
+    background-color: inherit;
+  }
+}
+
+@layer components {
+  .main-input {
+    @apply w-full pl-50 bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm text-right focus:outline-none focus:border-[#8B9DC3] relative z-10;
+  }
+
+  .submit-button {
+    @apply h-[calc(100%-14px)] absolute left-2 top-[7px] text-[14px] p-2 px-5 transition rounded bg-[#38727C] !text-white flex items-center gap-2 cursor-pointer hover:bg-[#96989A] hover:text-[#848484] disabled:opacity-50 disabled:cursor-not-allowed z-20;
+  }
+}
+
+/* Apply Vazirmatn font globally and ensure text-white works */
 @keyframes spin {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -110,9 +132,11 @@ body {
   0% {
     background-color: #30363d;
   }
+
   50% {
     background-color: #444c56;
   }
+
   100% {
     background-color: #30363d;
   }
@@ -144,6 +168,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(-360deg);
   }
@@ -159,9 +184,11 @@ body {
   0% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 1;
   }
@@ -181,6 +208,7 @@ body {
     opacity: 0;
     transform: translateX(-10px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -188,15 +216,20 @@ body {
 }
 
 @keyframes bounceOnce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   25% {
     transform: scale(1.1);
   }
+
   50% {
     transform: scale(0.95);
   }
+
   75% {
     transform: scale(1.05);
   }
@@ -232,15 +265,15 @@ body {
   background: #0d1117;
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #30363d #161b22;
-}
-
 .people-item-text:hover {
   color: #155dfc;
 }
 
 .people-item-text:hover path {
   stroke: #155dfc !important;
+}
+
+/* sonner */
+.toast-item {
+  gap: 12px !important;
 }

@@ -144,7 +144,7 @@ export default function Download() {
   const { hideAlert } = useAlert();
 
   return (
-    <div className="text-right h-full flex flex-col px-[35px]">
+    <div className="text-right h-full flex flex-col pr-[35px]">
       {/* Input Section - Fixed height */}
       <div className="flex-shrink-0">
         <p className="mb-4 flex justify-end items-center gap-2">
@@ -176,22 +176,20 @@ export default function Download() {
           {(totalResults > 0 || isLoading) && (
             <div className="absolute inset-0 rounded-md overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${
-                  isLoading && totalResults === 0
-                    ? "bg-gradient-to-r from-blue-500/20 via-blue-500/30 to-blue-500/20 animate-pulse"
-                    : isLoading && totalResults < totalExpected
+                className={`h-full transition-all duration-500 ${isLoading && totalResults === 0
+                  ? "bg-gradient-to-r from-blue-500/20 via-blue-500/30 to-blue-500/20 animate-pulse"
+                  : isLoading && totalResults < totalExpected
                     ? "bg-green-500/25 animate-pulse"
                     : "bg-green-500/30"
-                }`}
+                  }`}
                 style={{
                   width:
                     isLoading && totalResults === 0
                       ? "100%"
-                      : `${
-                          totalExpected > 0
-                            ? (totalResults / totalExpected) * 100
-                            : 0
-                        }%`,
+                      : `${totalExpected > 0
+                        ? (totalResults / totalExpected) * 100
+                        : 0
+                      }%`,
                 }}
               ></div>
             </div>
@@ -206,7 +204,7 @@ export default function Download() {
                 handleDownloadTest();
               }
             }}
-            className="bg-[#30363D] border border-[#6B7280] rounded-md p-4 text-sm w-full text-right dir-fa focus:outline-none focus:border-[#8B9DC3] relative z-10"
+            className="main-input dir-fa"
             placeholder="لینکی که مستقیما به شروع دانلود منجر می‌شود را وارد کنید"
             disabled={isLoading}
           />
@@ -216,9 +214,8 @@ export default function Download() {
             <div className="absolute left-[200px] top-1/2 transform -translate-y-1/2 text-xs text-gray-400 z-20">
               {isLoading && totalResults === 0
                 ? "در حال شروع تست..."
-                : `${totalResults} / ${totalExpected} ${
-                    isCompleted ? "تکمیل شد" : ""
-                  }`}
+                : `${totalResults} / ${totalExpected} ${isCompleted ? "تکمیل شد" : ""
+                }`}
             </div>
           )}
 
@@ -227,7 +224,7 @@ export default function Download() {
             disabled={
               isLoading || (totalResults > 0 && totalResults < totalExpected)
             }
-            className="group dir-fa absolute left-2 top-[7px] p-2 px-5 transition rounded bg-[#38727C] text-white flex items-center gap-2 cursor-pointer hover:bg-[#96989A] hover:text-[#848484] disabled:opacity-50 disabled:cursor-not-allowed z-20"
+            className="submit-button group dir-fa"
           >
             <Search />
             {isLoading || (totalResults > 0 && totalResults < totalExpected)
@@ -264,7 +261,7 @@ export default function Download() {
         </div>
 
         <div className="flex items-end gap-2 dir-fa">
-          <div className="w-[132px] h-[60px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
+          <div className="w-[122px] h-[43px] bg-[#30363D] border-[#444C56] border rounded-xl grid grid-cols-3 cursor-pointer">
             <button
               onClick={() => setDownloadTime(downloadTime + 1)}
               className="h-full w-full flex items-center justify-center hover:bg-[#262a30] rounded-r-xl p-1 select-none cursor-pointer"
@@ -273,9 +270,8 @@ export default function Download() {
             </button>
             <input
               type="text"
-              className={`h-full w-full flex items-center justify-center text-center ${
-                downloadTime <= 5 || downloadTime > 10 ? "text-[#F5C518]" : ""
-              }`}
+              className={`h-full w-full flex items-center justify-center text-center pt-[0.2rem] ${downloadTime <= 5 || downloadTime > 10 ? "text-[#F5C518]" : ""
+                }`}
               value={downloadTime}
               onChange={(e) => setDownloadTime(Number(e.target.value) || 0)}
             />
@@ -312,7 +308,7 @@ export default function Download() {
 
       {/* Results Section - Takes remaining space */}
       <div className="flex-1 flex flex-col min-h-0 mt-2">
-        <p className="text-right mb-2">نتایج تست</p>
+        <p className="text-right mb-3">نتایج تست</p>
 
         {(totalResults > 0 || isCompleted) && (
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 dir-fa">

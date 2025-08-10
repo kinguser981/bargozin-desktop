@@ -74,27 +74,27 @@ export default function About() {
             ارتباط باشید.
           </p>
 
-          <div className="flex justify-center items-center gap-2 mt-5 underline">
+          <div className="flex justify-center items-center gap-6 mt-7 underline">
             <div
-              className="flex justify-center items-center gap-2 cursor-pointer"
+              className="flex justify-center items-center gap-2 cursor-pointer text-sm"
               onClick={() =>
                 handleLinkedInClick(
                   "https://github.com/403unlocker/bargozin-desktop"
                 )
               }
             >
-              <Github />
               مشاهده سورس کد پروژه
+              <Github />
             </div>
-            <div className="flex justify-center items-center gap-2 cursor-pointer">
-              <Linkedin />
+            <div className="flex justify-center items-center gap-2 cursor-pointer text-sm">
               مشاهده لینکدین برگُزین
+              <Linkedin />
             </div>
           </div>
         </div>
         <Link
           to="/"
-          className="text-center text-sm mt-5 flex justify-center items-center gap-2 cursor-pointer"
+          className="text-center text-sm mt-9 flex justify-center items-center gap-2 cursor-pointer"
         >
           <ArrowLeft />
           بازگشت به سرویس‌ها
