@@ -13,7 +13,7 @@ function App() {
     <AlertProvider>
       <div>
         <Layout>
-        <Toaster />
+          <Toaster />
           <Routes>
             <Route path="/" element={<DomainTest />} />
             <Route path="/about" element={<About />} />

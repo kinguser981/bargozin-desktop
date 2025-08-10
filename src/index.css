@@ -80,6 +80,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -110,9 +111,11 @@ body {
   0% {
     background-color: #30363d;
   }
+
   50% {
     background-color: #444c56;
   }
+
   100% {
     background-color: #30363d;
   }
@@ -144,6 +147,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(-360deg);
   }
@@ -159,9 +163,11 @@ body {
   0% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 1;
   }
@@ -181,6 +187,7 @@ body {
     opacity: 0;
     transform: translateX(-10px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -188,15 +195,20 @@ body {
 }
 
 @keyframes bounceOnce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   25% {
     transform: scale(1.1);
   }
+
   50% {
     transform: scale(0.95);
   }
+
   75% {
     transform: scale(1.05);
   }

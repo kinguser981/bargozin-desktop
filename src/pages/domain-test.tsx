@@ -165,11 +165,10 @@ export default function DomainTest() {
           {(totalResults > 0 || isLoading) && (
             <div className="absolute inset-0 rounded-md overflow-hidden">
               <div
-                className={`h-full bg-green-500/25 transition-all duration-300 ${
-                  totalResults > 0 && totalResults < totalExpected
+                className={`h-full bg-green-500/25 transition-all duration-300 ${totalResults > 0 && totalResults < totalExpected
                     ? "pulse-effect"
                     : ""
-                }`}
+                  }`}
                 style={{
                   width: `${(totalResults / totalExpected) * 100}%`,
                 }}
